@@ -1,0 +1,123 @@
+@import 'variables';
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px); 
+
+    .modal-content {
+        background-color: $color-blanco-puro;
+        width: 100%;
+        max-width: 600px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: fadeIn 0.2s ease-out;
+
+        .modal-header {
+            padding: 20px 25px;
+            background-color: $color-fondo-claro;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+
+            h3 {
+                margin: 0;
+                font-size: 1.2rem;
+                color: $color-texto-titulos;
+            }
+
+            .btn-cerrar {
+                background: none;
+                border: none;
+                font-size: 1.8rem;
+                cursor: pointer;
+                color: $color-texto-parrafos;
+                line-height: 1;
+
+                &:hover {
+                    color: $color-texto-titulos;
+                }
+            }
+        }
+
+        .modal-body {
+            padding: 25px;
+            max-height: 60vh;
+            overflow-y: auto;
+
+            .detalle-grupo {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #f5f5f5;
+
+                .label {
+                    font-weight: 500;
+                    color: $color-texto-parrafos;
+                }
+
+                .valor {
+                    color: $color-texto-titulos;
+                    text-align: right;
+                }
+            }
+
+            .modal-subtitulo {
+                margin-top: 25px;
+                margin-bottom: 15px;
+                font-size: 1rem;
+                color: $color-primario;
+                border-bottom: 2px solid $color-fondo-claro;
+                padding-bottom: 5px;
+            }
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid #eee;
+
+            .btn-volver {
+                background-color: #e0e0e0;
+                color: $color-texto-titulos;
+                border: none;
+                padding: 8px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: inherit;
+                font-weight: 500;
+                transition: background-color 0.2s;
+
+                &:hover {
+                    background-color: #d0d0d0;
+                }
+            }
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,59 @@
+@import 'variables';
+
+.home-container {
+    display: flex;
+    height: 100vh;
+
+    .split-screen {
+        flex: 1; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.6s ease;
+
+        background-color: $color-blanco-puro;
+
+        &:hover {
+            background-color: $color-fondo-claro;
+        }
+
+        .content {
+            text-align: center;
+            padding: 40px;
+
+            .logo-museo {
+                width: 140px;
+                height: 140px;
+                border-radius: 50%; 
+                object-fit: cover; 
+                margin-bottom: 20px;
+                border: 3px solid $color-fondo-claro;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            }
+
+            h1 {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+            }
+
+            p {
+                margin-bottom: 30px;
+                font-size: 1.1rem;
+            }
+
+            .btn-ingresar {
+                display: inline-block;
+                background-color: $color-primario;
+                color: $color-blanco-puro;
+                padding: 12px 30px;
+                border-radius: 25px; 
+                font-weight: bold;
+                transition: background-color 0.2s;
+
+                &:hover {
+                    background-color: $color-primario-hover;
+                }
+            }
+        }
+    }
+}

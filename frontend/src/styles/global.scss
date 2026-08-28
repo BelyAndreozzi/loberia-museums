@@ -1,0 +1,23 @@
+@import 'variables';
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: $fuente-principal;
+    background-color: $color-fondo-base;
+    color: $color-texto-parrafos;
+}
+
+h1,
+h2,
+h3 {
+    color: $color-texto-titulos;
+}
+
+a {
+    text-decoration: none;
+}
