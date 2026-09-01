@@ -96,7 +96,7 @@
             }
 
             .user-profile-container {
-                position: relative; 
+                position: relative;
 
                 .user-profile {
                     display: flex;
@@ -216,6 +216,62 @@
                     display: flex;
                     gap: 12px;
                     align-items: center;
+                }
+            }
+
+            .filtros-container {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 20px;
+                flex-wrap: wrap; // Evita que se rompa en pantallas chicas
+
+                .input-busqueda {
+                    flex: 1;
+                    min-width: 250px;
+                    padding: 10px 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    font-family: inherit;
+                    font-size: 0.95rem;
+                    color: $color-texto-titulos;
+                    transition: border-color 0.2s;
+
+                    &:focus {
+                        outline: none;
+                        border-color: $color-primario;
+                    }
+                }
+
+                .select-filtro {
+                    padding: 10px 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    font-family: inherit;
+                    font-size: 0.95rem;
+                    background-color: $color-blanco-puro;
+                    color: $color-texto-titulos;
+                    cursor: pointer;
+
+                    &:focus {
+                        outline: none;
+                        border-color: $color-primario;
+                    }
+                }
+
+                .btn-limpiar-filtros {
+                    padding: 10px 15px;
+                    background-color: #f5f5f5;
+                    color: $color-texto-parrafos;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: all 0.2s;
+
+                    &:hover {
+                        background-color: #e0e0e0;
+                        color: $color-texto-titulos;
+                    }
                 }
             }
 

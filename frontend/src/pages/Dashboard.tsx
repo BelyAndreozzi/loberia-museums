@@ -29,6 +29,12 @@ const Dashboard = () => {
     // Estado para controlar el modal de confirmación masiva
     const [modalMasivoAbierto, setModalMasivoAbierto] = useState(false);
 
+    const [filtros, setFiltros] = useState({
+        busqueda: '',
+        estado_conservacion: '',
+        categoria: ''
+    });
+
     const [menuAbierto, setMenuAbierto] = useState(false);
     useEffect(() => {
         const manejarClicAfuera = (evento: MouseEvent) => {
@@ -44,17 +50,22 @@ const Dashboard = () => {
     }, [menuAbierto]);
 
     const cargarDatos = async () => {
-        setCargando(true);
         try {
-            const respuesta = await fetch(`http://localhost:3000/api/piezas?museo_id=${usuario.museo_id}`);
+            const params = new URLSearchParams({
+                museo_id: usuario.museo_id.toString(),
+            });
+
+            if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
+            if (filtros.estado_conservacion) params.append('estado_conservacion', filtros.estado_conservacion);
+            if (filtros.categoria && usuario.museo_id === 1) params.append('categoria', filtros.categoria);
+
+            const respuesta = await fetch(`http://localhost:3000/api/piezas?${params.toString()}`);
             if (respuesta.ok) {
                 const datos = await respuesta.json();
                 setPiezas(datos);
             }
         } catch (error) {
-            console.error('Error:', error);
-        } finally {
-            setCargando(false);
+            console.error('Error al cargar piezas:', error);
         }
     };
 
@@ -132,7 +143,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         cargarDatos();
-    }, [usuario.museo_id]);
+    }, [filtros]);
 
     return (
         <div className="dashboard-container">
@@ -224,6 +235,54 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
+                            {/* Barra de Búsqueda y Filtros */}
+                            <div className="filtros-container">
+                                <input
+                                    type="text"
+                                    className="input-busqueda"
+                                    placeholder="🔍 Buscar por palabra clave, N° inventario o procedencia..."
+                                    value={filtros.busqueda}
+                                    onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+                                />
+
+                                <select
+                                    className="select-filtro"
+                                    value={filtros.estado_conservacion}
+                                    onChange={(e) => setFiltros({ ...filtros, estado_conservacion: e.target.value })}
+                                >
+                                    <option value="">Todos los estados</option>
+                                    <option value="Excelente">Excelente</option>
+                                    <option value="Bueno">Bueno</option>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Malo">Malo</option>
+                                </select>
+
+                                {/* Renderizado condicional del filtro de categorías */}
+                                {usuario.museo_id === 1 && (
+                                    <select
+                                        className="select-filtro"
+                                        value={filtros.categoria}
+                                        onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })}
+                                    >
+                                        <option value="">Todas las categorías</option>
+                                        <option value="Paleontología">Paleontología</option>
+                                        <option value="Geología">Geología</option>
+                                        <option value="Zoología">Zoología</option>
+                                        <option value="Botánica">Botánica</option>
+                                    </select>
+                                )}
+
+                                {/* Botón para limpiar rápidamente si hay filtros activos */}
+                                {(filtros.busqueda || filtros.estado_conservacion || filtros.categoria) && (
+                                    <button
+                                        className="btn-limpiar-filtros"
+                                        onClick={() => setFiltros({ busqueda: '', estado_conservacion: '', categoria: '' })}
+                                    >
+                                        Limpiar
+                                    </button>
+                                )}
+                            </div>
+
 
                             <div className="table-responsive">
                                 <table className="data-table">
@@ -252,39 +311,39 @@ const Dashboard = () => {
                                                 </td>
                                             </tr>
                                         ) : (
-                                                piezas.map((pieza: any) => (
-                                                    <tr key={pieza.id}>
-                                                        <td style={{ textAlign: 'center' }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={idsSeleccionados.includes(pieza.id)}
-                                                                onChange={() => toggleSeleccion(pieza.id)}
-                                                            />
-                                                        </td>
-                                                        <td>
-                                                            <span className={`badge-museo ${pieza.museo_id === 1 ? 'naturales' : 'historia'}`}>
-                                                                {pieza.nombre_museo}
-                                                            </span>
-                                                        </td>
-                                                        <td><strong>{pieza.numero_inventario}</strong></td>
-                                                        <td>{pieza.nombre_designacion}</td>
-                                                        <td>{pieza.estado_conservacion}</td>
-                                                        <td>{pieza.procedencia}</td>
-                                                        <td style={{ textAlign: 'center' }}>
-                                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                                                                <button className="btn-accion" onClick={() => setPiezaSeleccionada(pieza)}>
-                                                                    Ver Detalles
-                                                                </button>
-                                                                <button className="btn-accion btn-editar" onClick={() => iniciarEdicion(pieza)} title="Editar">
-                                                                    ✏️
-                                                                </button>
-                                                                <button className="btn-accion btn-eliminar" onClick={() => solicitarEliminacion(pieza)} title="Eliminar">
-                                                                    🗑️
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
+                                            piezas.map((pieza: any) => (
+                                                <tr key={pieza.id}>
+                                                    <td style={{ textAlign: 'center' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={idsSeleccionados.includes(pieza.id)}
+                                                            onChange={() => toggleSeleccion(pieza.id)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <span className={`badge-museo ${pieza.museo_id === 1 ? 'naturales' : 'historia'}`}>
+                                                            {pieza.nombre_museo}
+                                                        </span>
+                                                    </td>
+                                                    <td><strong>{pieza.numero_inventario}</strong></td>
+                                                    <td>{pieza.nombre_designacion}</td>
+                                                    <td>{pieza.estado_conservacion}</td>
+                                                    <td>{pieza.procedencia}</td>
+                                                    <td style={{ textAlign: 'center' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                                                            <button className="btn-accion" onClick={() => setPiezaSeleccionada(pieza)}>
+                                                                Ver Detalles
+                                                            </button>
+                                                            <button className="btn-accion btn-editar" onClick={() => iniciarEdicion(pieza)} title="Editar">
+                                                                ✏️
+                                                            </button>
+                                                            <button className="btn-accion btn-eliminar" onClick={() => solicitarEliminacion(pieza)} title="Eliminar">
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
                                         )}
                                     </tbody>
                                 </table>

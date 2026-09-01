@@ -14,9 +14,9 @@ app.use(express.json());
 app.get('/api/test-db', async (req, res) => {
     try {
         const result = await pool.query('SELECT NOW()');
-        res.json({ 
-            mensaje: '¡Conexión exitosa a la base de datos!', 
-            hora_servidor: result.rows[0].now 
+        res.json({
+            mensaje: '¡Conexión exitosa a la base de datos!',
+            hora_servidor: result.rows[0].now
         });
     } catch (err) {
         console.error(err.message);
@@ -35,16 +35,16 @@ app.post('/api/piezas', async (req, res) => {
     const client = await pool.connect();
 
     try {
-        await client.query('BEGIN'); 
+        await client.query('BEGIN');
 
         const queryPieza = `
             INSERT INTO piezas (museo_id, numero_inventario, nombre_designacion, estado_conservacion, procedencia)
             VALUES ($1, $2, $3, $4, $5) RETURNING id;
         `;
         const valoresPieza = [museo_id, numero_inventario, nombre_designacion, estado_conservacion, procedencia];
-        
+
         const resultadoPieza = await client.query(queryPieza, valoresPieza);
-        const nuevaPiezaId = resultadoPieza.rows[0].id; 
+        const nuevaPiezaId = resultadoPieza.rows[0].id;
 
         if (museo_id === 1) {
             const queryNaturales = `
@@ -67,45 +67,76 @@ app.post('/api/piezas', async (req, res) => {
         res.status(201).json({ mensaje: '¡Pieza guardada con éxito!', pieza_id: nuevaPiezaId });
 
     } catch (error) {
-        await client.query('ROLLBACK'); 
+        await client.query('ROLLBACK');
         console.error('Error al guardar la pieza:', error);
         res.status(500).json({ error: 'Fallo al guardar en la base de datos' });
     } finally {
-        client.release(); 
+        client.release();
     }
 });
 
-// Ruta GET para obtener piezas (con filtro opcional por museo)
+// Ruta GET para obtener piezas con filtros dinámicos
 app.get('/api/piezas', async (req, res) => {
-    const { museo_id } = req.query; 
+    // 1. Recibimos los posibles filtros desde el frontend
+    const {
+        busqueda, // Para palabra clave (nombre, inventario, procedencia)
+        estado_conservacion,
+        museo_id,
+        categoria 
+    } = req.query;
 
     try {
         let query = `
-            SELECT 
-                p.*, 
-                m.nombre as nombre_museo,
-                dn.categoria, dn.ubicacion_museo, dn.ubicacion_deposito, dn.estanteria, dn.estante,
-                dh.material_principal, dh.material_secundario, dh.material_terciario, dh.largo_cm, dh.ancho_cm, dh.espesor_cm, dh.autor, dh.forma_ingreso
+            SELECT p.*, m.nombre as nombre_museo, 
+                    dn.categoria, dn.ubicacion_museo,
+                    dh.forma_ingreso, dh.material_principal, dh.material_secundario
             FROM piezas p
-            JOIN museos m ON p.museo_id = m.id
+            LEFT JOIN museos m ON p.museo_id = m.id
             LEFT JOIN detalles_naturales dn ON p.id = dn.pieza_id
             LEFT JOIN detalles_historia dh ON p.id = dh.pieza_id
+            WHERE 1=1
         `;
-        
-        const queryParams = [];
 
-        if (museo_id) {
-            query += ` WHERE p.museo_id = $1`;
-            queryParams.push(museo_id);
+        const params = [];
+        let paramCount = 1;
+
+        // Búsqueda general (Palabras clave)
+        if (busqueda) {
+            query += ` AND (
+                unaccent(p.nombre_designacion) ILIKE unaccent($${paramCount}) OR 
+                unaccent(p.numero_inventario) ILIKE unaccent($${paramCount}) OR 
+                unaccent(p.procedencia) ILIKE unaccent($${paramCount})
+            )`;
+            params.push(`%${busqueda}%`); 
+            paramCount++;
         }
 
-        query += ` ORDER BY p.fecha_registro DESC;`;
+        if (estado_conservacion) {
+            query += ` AND p.estado_conservacion = $${paramCount}`;
+            params.push(estado_conservacion);
+            paramCount++;
+        }
 
-        const result = await pool.query(query, queryParams);
+        if (museo_id) {
+            query += ` AND p.museo_id = $${paramCount}`;
+            params.push(museo_id);
+            paramCount++;
+        }
+
+        if (categoria) {
+            query += ` AND dn.categoria = $${paramCount}`;
+            params.push(categoria);
+            paramCount++;
+        }
+
+        query += ` ORDER BY p.fecha_registro DESC`;
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
+
     } catch (error) {
-        console.error('Error al obtener piezas:', error);
-        res.status(500).json({ error: 'Fallo al traer los datos de la base' });
+        console.error('Error al obtener las piezas:', error);
+        res.status(500).json({ error: 'Fallo al obtener los datos' });
     }
 });
 
