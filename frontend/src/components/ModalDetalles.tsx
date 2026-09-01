@@ -4,9 +4,11 @@ import '../styles/Modal.scss';
 interface ModalProps {
     pieza: any;
     alCerrar: () => void;
+    alEliminar: (id: number) => void;
+    alEditar: (pieza: any) => void;
 }
 
-const ModalDetalles = ({ pieza, alCerrar }: ModalProps) => {
+const ModalDetalles = ({ pieza, alCerrar, alEliminar, alEditar }: ModalProps) => {
     if (!pieza) return null;
 
     return (
@@ -89,6 +91,15 @@ const ModalDetalles = ({ pieza, alCerrar }: ModalProps) => {
                 </div>
 
                 <div className="modal-footer">
+                    <button className="btn-editar-modal" onClick={() => alEditar(pieza)}>
+                        Editar Pieza
+                    </button>
+                    <button className="btn-eliminar-modal" onClick={() => {
+                        alEliminar(pieza);
+                        alCerrar();
+                    }}>
+                        Eliminar Pieza
+                    </button>
                     <button className="btn-volver" onClick={alCerrar}>Cerrar</button>
                 </div>
             </div>

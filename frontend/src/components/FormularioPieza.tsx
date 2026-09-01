@@ -8,25 +8,26 @@ interface FormularioProps {
         museo_id: number;
     };
     alGuardar: () => void;
+    piezaAEditar?: any;
 }
 
 
-const FormularioPieza = ({ usuario, alGuardar }: FormularioProps) => {
+const FormularioPieza = ({ usuario, alGuardar, piezaAEditar }: FormularioProps) => {
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState('');
 
     const [formData, setFormData] = useState({
-        numero_inventario: '',
-        nombre_designacion: '',
-        estado_conservacion: 'Bueno',
-        procedencia: '',
-        categoria: '',
-        ubicacion_museo: false,
-        material_principal: '',
-        material_secundario: '',
-        largo_cm: '',
-        ancho_cm: '',
-        forma_ingreso: ''
+        numero_inventario: piezaAEditar ? piezaAEditar.numero_inventario : '',
+        nombre_designacion: piezaAEditar ? piezaAEditar.nombre_designacion : '',
+        estado_conservacion: piezaAEditar ? piezaAEditar.estado_conservacion : 'Bueno',
+        procedencia: piezaAEditar ? piezaAEditar.procedencia : '',
+        categoria: piezaAEditar ? piezaAEditar.categoria || '' : '',
+        ubicacion_museo: piezaAEditar ? piezaAEditar.ubicacion_museo || false : false,
+        material_principal: piezaAEditar ? piezaAEditar.material_principal || '' : '',
+        material_secundario: piezaAEditar ? piezaAEditar.material_secundario || '' : '',
+        largo_cm: piezaAEditar ? piezaAEditar.largo_cm || '' : '',
+        ancho_cm: piezaAEditar ? piezaAEditar.ancho_cm || '' : '',
+        forma_ingreso: piezaAEditar ? piezaAEditar.forma_ingreso || '' : ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -47,8 +48,14 @@ const FormularioPieza = ({ usuario, alGuardar }: FormularioProps) => {
         try {
             const datosParaGuardar = { ...formData, museo_id: usuario.museo_id };
 
-            const respuesta = await fetch('http://localhost:3000/api/piezas', {
-                method: 'POST',
+            const url = piezaAEditar
+                ? `http://localhost:3000/api/piezas/${piezaAEditar.id}`
+                : 'http://localhost:3000/api/piezas';
+
+            const metodo = piezaAEditar ? 'PUT' : 'POST';
+
+            const respuesta = await fetch(url, {
+                method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datosParaGuardar)
             });
@@ -56,19 +63,20 @@ const FormularioPieza = ({ usuario, alGuardar }: FormularioProps) => {
             if (respuesta.ok) {
                 alGuardar();
             } else {
-                setError('Hubo un problema al guardar en la base de datos.');
+                setError('Hubo un problema al guardar los cambios en la base de datos.');
             }
         } catch (err) {
             setError('Error de conexión con el servidor.');
         } finally {
             setCargando(false);
         }
-    };
+    }
 
     return (
         <div className="form-container card-table">
             <div className="card-header">
-                <h3>Cargar Nueva Pieza</h3>
+                {/* Título dinámico según la acción */}
+                <h3>{piezaAEditar ? 'Editar Pieza' : 'Cargar Nueva Pieza'}</h3>
             </div>
 
             <form onSubmit={handleSubmit} className="pieza-form">
@@ -143,7 +151,7 @@ const FormularioPieza = ({ usuario, alGuardar }: FormularioProps) => {
                 <div className="form-actions">
                     <button type="button" className="btn-cancelar" onClick={alGuardar}>Cancelar</button>
                     <button type="submit" className="btn-guardar" disabled={cargando}>
-                        {cargando ? 'Guardando...' : 'Guardar Pieza'}
+                        {cargando ? 'Guardando...' : (piezaAEditar ? 'Actualizar Pieza' : 'Guardar Pieza')}
                     </button>
                 </div>
             </form>

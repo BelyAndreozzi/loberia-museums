@@ -95,9 +95,8 @@
                 margin: 0;
             }
 
-            /* --- MENÚ DESPLEGABLE DE USUARIO --- */
             .user-profile-container {
-                position: relative; // Necesario para posicionar el menú flotante respecto a este contenedor
+                position: relative; 
 
                 .user-profile {
                     display: flex;
@@ -154,7 +153,7 @@
                     background-color: $color-blanco-puro;
                     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
                     border-radius: 8px;
-                    width: 170px; // Un poquito más ancho para que respire
+                    width: 170px;
                     overflow: hidden;
                     z-index: 100;
                     border: 1px solid #eee;
@@ -166,7 +165,7 @@
                         color: #d32f2f;
                         font-size: 0.9rem;
                         font-weight: 500;
-                        white-space: nowrap; // FUERZA A QUE QUEDE EN UNA SOLA LÍNEA
+                        white-space: nowrap;
                         transition: background-color 0.2s;
 
                         &:hover {
@@ -193,130 +192,184 @@
         .content-area {
             padding: 40px;
 
-            .card-table {
-                background-color: $color-blanco-puro;
-                border-radius: 8px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-                padding: 25px;
+            .card-header {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #eee;
 
-                .card-header {
+                h3 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                    color: $color-texto-titulos;
+                }
+
+                .top-table {
                     display: flex;
                     justify-content: space-between;
+                    margin-bottom: 10px;
+                }
+
+                .acciones-header {
+                    display: flex;
+                    gap: 12px;
                     align-items: center;
-                    margin-bottom: 20px;
-                    padding-bottom: 15px;
-                    border-bottom: 1px solid #eee;
-
-                    h3 {
-                        margin: 0;
-                        font-size: 1.1rem;
-                    }
-
-                    .btn-agregar {
-                        background-color: $color-primario;
-                        color: $color-blanco-puro;
-                        border: none;
-                        padding: 10px 20px;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        font-family: inherit;
-                        font-weight: 500;
-                        transition: background-color 0.2s;
-
-                        &:hover {
-                            background-color: $color-primario-hover;
-                        }
-                    }
                 }
+            }
 
-                .mensaje-carga {
-                    padding: 20px;
-                    text-align: center;
-                    color: $color-texto-parrafos;
-                }
+            .btn-agregar {
+                background-color: $color-primario;
+                color: $color-blanco-puro;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: inherit;
+                font-weight: 500;
+                transition: background-color 0.2s;
 
-                .table-responsive {
-                    overflow-x: auto;
-
-                    .data-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        text-align: left;
-
-                        th,
-                        td {
-                            padding: 15px;
-                            border-bottom: 1px solid #f0f0f0;
-                        }
-
-                        th {
-                            color: $color-texto-parrafos;
-                            font-weight: 500;
-                            font-size: 0.9rem;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                        }
-
-                        td {
-                            color: $color-texto-titulos;
-                            font-size: 0.95rem;
-                            vertical-align: middle;
-                        }
-
-                        tbody tr {
-                            transition: background-color 0.2s;
-
-                            &:hover {
-                                background-color: $color-fondo-claro;
-                            }
-                        }
-
-                        .badge-museo {
-                            padding: 5px 10px;
-                            border-radius: 12px;
-                            font-size: 0.8rem;
-                            font-weight: 600;
-
-                            &.naturales {
-                                background-color: #e8f5e9;
-                                color: #2e7d32;
-                            }
-
-                            &.historia {
-                                background-color: #e3f2fd;
-                                color: #1565c0;
-                            }
-                        }
-
-                        .btn-accion {
-                            background: none;
-                            border: 1px solid #ddd;
-                            padding: 6px 12px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            color: $color-texto-parrafos;
-                            font-family: inherit;
-                            font-size: 0.85rem;
-                            transition: all 0.2s;
-
-                            &:hover {
-                                background-color: $color-primario;
-                                color: $color-blanco-puro;
-                                border-color: $color-primario;
-                            }
-                        }
-                    }
-                }
-
-                .table-placeholder {
-                    padding: 40px;
-                    text-align: center;
-                    color: $color-texto-parrafos;
-                    background-color: $color-fondo-claro;
-                    border-radius: 5px;
-                    border: 1px dashed #ccc;
+                &:hover {
+                    background-color: $color-primario-hover;
                 }
             }
         }
+
+        .mensaje-carga {
+            padding: 20px;
+            text-align: center;
+            color: $color-texto-parrafos;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                text-align: left;
+                background-color: $color-blanco-puro;
+
+                th,
+                td {
+                    padding: 14px 12px;
+                    border-bottom: 1px solid #f0f0f0;
+                    font-size: 0.9rem;
+                }
+
+                th {
+                    color: $color-texto-parrafos;
+                    font-weight: 600;
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    background-color: $color-fondo-claro;
+                }
+
+                td {
+                    color: $color-texto-titulos;
+                    vertical-align: middle;
+                }
+
+                tbody tr {
+                    transition: background-color 0.2s;
+
+                    &:hover {
+                        background-color: $color-fondo-claro;
+                    }
+                }
+            }
+
+
+            .badge-museo {
+                padding: 5px 10px;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 600;
+
+                &.naturales {
+                    background-color: #e8f5e9;
+                    color: #2e7d32;
+                }
+
+                &.historia {
+                    background-color: #e3f2fd;
+                    color: #1565c0;
+                }
+            }
+
+            .btn-accion {
+                background: none;
+                border: 1px solid #ddd;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                color: $color-texto-parrafos;
+                font-family: inherit;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+
+                &:hover {
+                    background-color: $color-primario;
+                    color: $color-blanco-puro;
+                    border-color: $color-primario;
+                }
+            }
+
+            .btn-eliminar {
+                background-color: #e74d3cab;
+                border: none;
+                padding: 6px 12px;
+                margin-left: 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+
+                &:hover {
+                    background-color: #c0392b;
+                }
+            }
+
+            .btn-editar {
+                background-color: #3b83f6a1;
+                border: none;
+                padding: 6px 12px;
+                margin-left: 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+
+                &:hover {
+                    background-color: #3b82f6;
+                }
+            }
+        }
+    }
+
+    .table-placeholder {
+        padding: 40px;
+        text-align: center;
+        color: $color-texto-parrafos;
+        background-color: $color-fondo-claro;
+        border-radius: 5px;
+        border: 1px dashed #ccc;
+    }
+}
+
+.mensaje-vacio {
+    text-align: center;
+    padding: 50px 20px !important;
+    color: $color-texto-parrafos;
+    font-style: italic;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+
+    &:hover {
+        background-color: $color-blanco-puro !important;
     }
 }
