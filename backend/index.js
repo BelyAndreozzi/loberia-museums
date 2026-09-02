@@ -90,9 +90,12 @@ app.get('/api/piezas', async (req, res) => {
 
     try {
         let query = `
-            SELECT p.*, m.nombre as nombre_museo, 
-                    dn.categoria, dn.ubicacion_museo,
-                    dh.forma_ingreso, dh.material_principal, dh.material_secundario
+            SELECT p.*, m.nombre as nombre_museo,
+                    dn.categoria, dn.ubicacion_museo, dn.ubicacion_deposito,
+                    dn.estanteria, dn.estante,
+                    dh.material_principal, dh.material_secundario,
+                    dh.material_terciario, dh.largo_cm, dh.ancho_cm,
+                    dh.espesor_cm, dh.autor, dh.forma_ingreso
             FROM piezas p
             LEFT JOIN museos m ON p.museo_id = m.id
             LEFT JOIN detalles_naturales dn ON p.id = dn.pieza_id

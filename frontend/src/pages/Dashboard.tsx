@@ -5,6 +5,7 @@ import FormularioPieza from '../components/FormularioPieza';
 import ModalDetalles from '../components/ModalDetalles';
 import ModalConfirmacion from '../components/ModalConfirmacion';
 import TarjetasEstadisticas from '../components/TarjetasEstadisticas';
+import { descargarInventarioCsv } from '../utils/exportarInventario';
 
 const estadisticasIniciales = {
     total: 0,
@@ -274,6 +275,20 @@ const Dashboard = () => {
                             <div className="top-table">
                                 <h3>Últimas piezas registradas</h3>
                                 <div className="acciones-header">
+                                    <button
+                                        className="btn-descargar"
+                                        type="button"
+                                        onClick={() => descargarInventarioCsv(
+                                            piezas,
+                                            nombresInventario[usuario.museo_id],
+                                            usuario.museo_id
+                                        )}
+                                        disabled={piezas.length === 0}
+                                        title="Descargar el inventario filtrado en CSV"
+                                    >
+                                        <span aria-hidden="true">⇩</span>
+                                        Descargar Inventario
+                                    </button>
                                     {idsSeleccionados.length > 0 && (
                                         <button
                                             className="btn-peligro-masivo"
