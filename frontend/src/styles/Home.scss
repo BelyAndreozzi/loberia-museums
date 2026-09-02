@@ -57,3 +57,44 @@
         }
     }
 }
+
+@media (max-width: 700px) {
+    .home-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+
+        .split-screen {
+            flex: 0 0 50vh;
+            min-height: 420px;
+
+            .content {
+                width: min(100%, 420px);
+                padding: 28px 22px;
+
+                .logo-museo {
+                    width: 96px;
+                    height: 96px;
+                    margin-bottom: 14px;
+                }
+
+                h1 {
+                    font-size: 1.65rem;
+                    line-height: 1.2;
+                    margin-bottom: 10px;
+                }
+
+                p {
+                    margin: 0 auto 20px;
+                    max-width: 320px;
+                    font-size: 0.95rem;
+                    line-height: 1.45;
+                }
+
+                .btn-ingresar {
+                    padding: 10px 24px;
+                }
+            }
+        }
+    }
+}
