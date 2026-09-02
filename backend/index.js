@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
+const estadisticasRouter = require('./routes/estadisticas');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -74,6 +75,8 @@ app.post('/api/piezas', async (req, res) => {
         client.release();
     }
 });
+
+app.use('/api/piezas/estadisticas', estadisticasRouter);
 
 // Ruta GET para obtener piezas con filtros dinámicos
 app.get('/api/piezas', async (req, res) => {

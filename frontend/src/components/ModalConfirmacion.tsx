@@ -1,4 +1,3 @@
-import React from 'react';
 import '../styles/Modal.scss';
 
 interface ModalConfirmacionProps {

@@ -1,9 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Dashboard.scss';
 import FormularioPieza from '../components/FormularioPieza';
 import ModalDetalles from '../components/ModalDetalles';
 import ModalConfirmacion from '../components/ModalConfirmacion';
+import TarjetasEstadisticas from '../components/TarjetasEstadisticas';
+
+const estadisticasIniciales = {
+    total: 0,
+    porEstado: {},
+    ingresadasRecientemente: 0,
+    periodoRecientesDias: 30
+};
+
+const nombresInventario: Record<number, string> = {
+    1: 'Ciencias Naturales',
+    2: 'Historia'
+};
 
 const Dashboard = () => {
     // Simulamos un usuario logueado (en un caso real, esto vendría del backend)
@@ -14,7 +27,8 @@ const Dashboard = () => {
     });
 
     const [piezas, setPiezas] = useState([]);
-    const [cargando, setCargando] = useState(true);
+    const [estadisticas, setEstadisticas] = useState(estadisticasIniciales);
+    const [cargandoEstadisticas, setCargandoEstadisticas] = useState(true);
 
     const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
     const [piezaAEditar, setPiezaAEditar] = useState<any>(null);
@@ -36,6 +50,7 @@ const Dashboard = () => {
     });
 
     const [menuAbierto, setMenuAbierto] = useState(false);
+    const [sidebarAbierta, setSidebarAbierta] = useState(false);
     useEffect(() => {
         const manejarClicAfuera = (evento: MouseEvent) => {
             const contenedor = document.getElementById('contenedor-perfil-usuario');
@@ -69,6 +84,24 @@ const Dashboard = () => {
         }
     };
 
+    const cargarEstadisticas = async () => {
+        setCargandoEstadisticas(true);
+
+        try {
+            const respuesta = await fetch(
+                `http://localhost:3000/api/piezas/estadisticas?museo_id=${usuario.museo_id}`
+            );
+
+            if (respuesta.ok) {
+                setEstadisticas(await respuesta.json());
+            }
+        } catch (error) {
+            console.error('Error al cargar estadísticas:', error);
+        } finally {
+            setCargandoEstadisticas(false);
+        }
+    };
+
     // Paso 1: El usuario hace clic en eliminar y abrimos el modal de advertencia
     const solicitarEliminacion = (piezaOId: any) => {
         const piezaEncontrada = typeof piezaOId === 'object'
@@ -90,6 +123,7 @@ const Dashboard = () => {
             if (respuesta.ok) {
                 setPiezaAEliminar(null);
                 cargarDatos();
+                cargarEstadisticas();
             } else {
                 alert('Hubo un error al intentar eliminar la pieza.');
             }
@@ -127,6 +161,7 @@ const Dashboard = () => {
                 setIdsSeleccionados([]);
                 setModalMasivoAbierto(false);
                 cargarDatos();
+                cargarEstadisticas();
             } else {
                 alert('Hubo un error al intentar eliminar las piezas seleccionadas.');
             }
@@ -145,30 +180,56 @@ const Dashboard = () => {
         cargarDatos();
     }, [filtros]);
 
+    useEffect(() => {
+        cargarEstadisticas();
+    }, []);
+
     return (
         <div className="dashboard-container">
-            <aside className="sidebar">
+            <button
+                className={`sidebar-overlay ${sidebarAbierta ? 'visible' : ''}`}
+                type="button"
+                aria-label="Cerrar menú"
+                onClick={() => setSidebarAbierta(false)}
+            />
+
+            <aside className={`sidebar ${sidebarAbierta ? 'abierta' : ''}`}>
                 <div className="sidebar-header">
                     <h2>Museos Lobería</h2>
+                </div>
+                <div className="sidebar-context">
+                    <span>Inventario actual</span>
+                    <strong>{nombresInventario[usuario.museo_id]}</strong>
                 </div>
                 <nav className="sidebar-nav">
                     <ul>
                         <li className={!mostrandoFormulario ? "active" : ""}>
-                            <button onClick={() => setMostrandoFormulario(false)}>Mi Inventario</button>
+                            <button onClick={() => { setMostrandoFormulario(false); setSidebarAbierta(false); }}>Mi Inventario</button>
                         </li>
                         <li className={mostrandoFormulario ? "active" : ""}>
-                            <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); }}>Cargar Pieza</button>
+                            <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
                         </li>
-                        <li><Link to="/">Cerrar Sesión</Link></li>
+                        <li><Link to="/" onClick={() => setSidebarAbierta(false)}>Cerrar Sesión</Link></li>
                     </ul>
                 </nav>
             </aside>
 
             <main className="main-content">
                 <header className="top-header">
+                    <button
+                        className="menu-toggle"
+                        type="button"
+                        aria-label={sidebarAbierta ? 'Cerrar menú' : 'Abrir menú'}
+                        aria-expanded={sidebarAbierta}
+                        onClick={() => setSidebarAbierta(!sidebarAbierta)}
+                    >
+                        <span />
+                        <span />
+                        <span />
+                    </button>
                     <div className="header-title">
                         <h1>
-                            Inventario - {usuario.museo_id === 1 ? 'Museo de Ciencias Naturales' : 'Museo Histórico'}
+                            Inventario de {nombresInventario[usuario.museo_id]}
                         </h1>
                     </div>
 
@@ -193,6 +254,7 @@ const Dashboard = () => {
                             </div>
                         )}
                     </div>
+
                 </header>
 
                 <section className="content-area">
@@ -204,6 +266,7 @@ const Dashboard = () => {
                                 setMostrandoFormulario(false);
                                 setPiezaAEditar(null);
                                 cargarDatos();
+                                cargarEstadisticas();
                             }}
                         />
                     ) : (
@@ -234,6 +297,11 @@ const Dashboard = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            <TarjetasEstadisticas
+                                estadisticas={estadisticas}
+                                cargando={cargandoEstadisticas}
+                            />
 
                             {/* Barra de Búsqueda y Filtros */}
                             <div className="filtros-container">
