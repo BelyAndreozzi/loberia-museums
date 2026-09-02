@@ -1,5 +1,28 @@
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
+CREATE TABLE IF NOT EXISTS usuarios (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(30) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email_verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    token_verificacion_hash VARCHAR(64),
+    token_verificacion_expira TIMESTAMP,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT usuarios_username_formato CHECK (username ~ '^[A-Za-z][A-Za-z0-9_.-]{2,29}$'),
+    CONSTRAINT usuarios_email_no_vacio CHECK (length(trim(email)) > 3)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS usuarios_username_unico
+    ON usuarios (lower(username));
+
+CREATE UNIQUE INDEX IF NOT EXISTS usuarios_email_unico
+    ON usuarios (lower(email));
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_verificado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_verificacion_hash VARCHAR(64);
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_verificacion_expira TIMESTAMP;
+
 CREATE TABLE IF NOT EXISTS museos (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL

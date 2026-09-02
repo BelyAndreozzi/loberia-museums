@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const estadisticasRouter = require('./routes/estadisticas');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,6 +11,7 @@ const port = process.env.PORT || 3000;
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRouter);
 
 // Ruta de prueba para verificar la conexión a la base de datos
 app.get('/api/test-db', async (req, res) => {
