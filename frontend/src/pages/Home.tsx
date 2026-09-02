@@ -12,8 +12,7 @@ const Home = () => {
                     <img src={logoNaturales} alt="Logo Naturales" className="logo-museo" />
                     <h1>Museo Cs. Naturales</h1>
                     <p>Gestión de patrimonio paleontológico, arqueológico y mineral</p>
-                    {/* <Link to="/naturales/login" className="btn-ingresar">Ingresar</Link>*/}
-                    <Link to="dashboard" className="btn-ingresar">Ingresar</Link>
+                    <Link to="/login" className="btn-ingresar">Ingresar</Link>
                 </div>
             </div>
 
@@ -22,8 +21,7 @@ const Home = () => {
                     <img src={logoHistoria} alt="Logo Historia" className="logo-museo" />
                     <h1>Museo Histórico</h1>
                     <p>Gestión de patrimonio histórico, documentos y fotografías</p>
-                    {/* <Link to="/historia/login" className="btn-ingresar">Ingresar</Link> */}
-                    <Link to="dashboard" className="btn-ingresar">Ingresar</Link>
+                    <Link to="/login" className="btn-ingresar">Ingresar</Link>
                 </div>
             </div>
         </div>

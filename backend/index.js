@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const pool = require('./db');
 const estadisticasRouter = require('./routes/estadisticas');
 const authRouter = require('./routes/auth');
@@ -9,8 +10,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middlewares
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 app.use('/api/auth', authRouter);
 
 // Ruta de prueba para verificar la conexión a la base de datos
