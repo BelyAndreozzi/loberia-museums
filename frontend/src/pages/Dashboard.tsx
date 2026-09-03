@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.scss';
 import FormularioPieza from '../components/FormularioPieza';
 import ModalDetalles from '../components/ModalDetalles';
@@ -20,6 +22,7 @@ const nombresInventario: Record<number, string> = {
 };
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     // Simulamos un usuario logueado (en un caso real, esto vendría del backend)
     const [usuario] = useState({
         nombre: 'Belén',
@@ -52,6 +55,21 @@ const Dashboard = () => {
 
     const [menuAbierto, setMenuAbierto] = useState(false);
     const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
+    const cerrarSesion = async (evento: ReactMouseEvent<HTMLAnchorElement>) => {
+        evento.preventDefault();
+
+        try {
+            await fetch('http://localhost:3000/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+        } finally {
+            navigate('/');
+        }
+    };
     useEffect(() => {
         const manejarClicAfuera = (evento: MouseEvent) => {
             const contenedor = document.getElementById('contenedor-perfil-usuario');
@@ -210,7 +228,7 @@ const Dashboard = () => {
                         <li className={mostrandoFormulario ? "active" : ""}>
                             <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
                         </li>
-                        <li><Link to="/" onClick={() => setSidebarAbierta(false)}>Cerrar Sesión</Link></li>
+                        <li><Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>Cerrar Sesión</Link></li>
                     </ul>
                 </nav>
             </aside>
@@ -249,7 +267,7 @@ const Dashboard = () => {
 
                         {menuAbierto && (
                             <div className="user-dropdown-menu">
-                                <Link to="/" className="dropdown-item salir">
+                                <Link to="/" className="dropdown-item salir" onClick={cerrarSesion}>
                                     Cerrar Sesión
                                 </Link>
                             </div>
