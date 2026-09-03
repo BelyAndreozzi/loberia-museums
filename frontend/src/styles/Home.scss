@@ -2,18 +2,7 @@
 
 .home-container {
     display: flex;
-    height: 100vh;
-    position: relative;
-
-    .home-register-link {
-        position: absolute;
-        top: 22px;
-        right: 26px;
-        z-index: 2;
-        color: $color-primario-hover;
-        font-weight: 700;
-        font-size: .9rem;
-    }
+    height: calc(100vh - 60px);
 
     .split-screen {
         flex: 1; 
@@ -73,7 +62,7 @@
     .home-container {
         flex-direction: column;
         height: auto;
-        min-height: 100vh;
+        min-height: calc(100vh - 60px);
 
         .split-screen {
             flex: 0 0 50vh;

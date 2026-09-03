@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/useAuth';
 import '../styles/Formulario.scss';
 
 interface FormularioProps {
@@ -15,6 +16,7 @@ interface FormularioProps {
 const FormularioPieza = ({ usuario, alGuardar, piezaAEditar }: FormularioProps) => {
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState('');
+    const { fetchConSesion } = useAuth();
 
     const [formData, setFormData] = useState({
         numero_inventario: piezaAEditar ? piezaAEditar.numero_inventario : '',
@@ -46,15 +48,15 @@ const FormularioPieza = ({ usuario, alGuardar, piezaAEditar }: FormularioProps) 
         setError('');
 
         try {
-            const datosParaGuardar = { ...formData, museo_id: usuario.museo_id };
+            const datosParaGuardar = formData;
 
             const url = piezaAEditar
-                ? `http://localhost:3000/api/piezas/${piezaAEditar.id}`
-                : 'http://localhost:3000/api/piezas';
+                ? `/api/piezas/${piezaAEditar.id}`
+                : '/api/piezas';
 
             const metodo = piezaAEditar ? 'PUT' : 'POST';
 
-            const respuesta = await fetch(url, {
+            const respuesta = await fetchConSesion(url, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datosParaGuardar)
@@ -62,8 +64,10 @@ const FormularioPieza = ({ usuario, alGuardar, piezaAEditar }: FormularioProps) 
 
             if (respuesta.ok) {
                 alGuardar();
+            } else if (respuesta.status === 401 || respuesta.status === 403) {
+                setError('No tienes permisos o tu sesión expiró. Inicia sesión nuevamente.');
             } else {
-                setError('Hubo un problema al guardar los cambios en la base de datos.');
+                setError('No se pudieron guardar los cambios. Intenta nuevamente.');
             }
         } catch (err) {
             setError('Error de conexión con el servidor.');

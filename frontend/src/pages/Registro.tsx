@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { API_URL } from '../config';
 import '../styles/Auth.scss';
-
-const API_URL = 'http://localhost:3000';
 
 const Registro = () => {
     const [datos, setDatos] = useState({
         username: '',
         email: '',
+        museo_id: '1',
         password: '',
         confirmPassword: ''
     });
@@ -42,7 +42,7 @@ const Registro = () => {
             }
 
             setMensaje(resultado.mensaje);
-            setDatos({ username: '', email: '', password: '', confirmPassword: '' });
+            setDatos({ username: '', email: '', museo_id: '1', password: '', confirmPassword: '' });
         } catch {
             setErrores({ general: 'No se pudo conectar con el servidor.' });
         } finally {
@@ -69,6 +69,14 @@ const Registro = () => {
                         Email
                         <input type="email" value={datos.email} onChange={evento => actualizarCampo('email', evento.target.value)} autoComplete="email" required />
                         {errores.email && <small>{errores.email}</small>}
+                    </label>
+                    <label>
+                        Museo
+                        <select value={datos.museo_id} onChange={evento => actualizarCampo('museo_id', evento.target.value)} required>
+                            <option value="1">Ciencias Naturales</option>
+                            <option value="2">Museo Histórico</option>
+                        </select>
+                        {errores.museo_id && <small>{errores.museo_id}</small>}
                     </label>
                     <label>
                         Contraseña

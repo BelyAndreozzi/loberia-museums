@@ -6,7 +6,12 @@ const validarRegistro = (datos = {}) => {
     const email = typeof datos.email === 'string' ? datos.email.trim().toLowerCase() : '';
     const password = typeof datos.password === 'string' ? datos.password : '';
     const confirmPassword = typeof datos.confirmPassword === 'string' ? datos.confirmPassword : '';
+    const museoId = Number(datos.museo_id);
     const errores = {};
+
+    if (!Number.isInteger(museoId) || ![1, 2].includes(museoId)) {
+        errores.museo_id = 'Debes seleccionar un museo válido.';
+    }
 
     if (!username) errores.username = 'El username es obligatorio.';
     else if (!USERNAME_REGEX.test(username)) {
@@ -24,7 +29,7 @@ const validarRegistro = (datos = {}) => {
     if (!confirmPassword) errores.confirmPassword = 'La confirmación de contraseña es obligatoria.';
     else if (password !== confirmPassword) errores.confirmPassword = 'Las contraseñas no coinciden.';
 
-    return { errores, valores: { username, email, password } };
+    return { errores, valores: { username, email, password, museo_id: museoId } };
 };
 
 module.exports = { validarRegistro };
