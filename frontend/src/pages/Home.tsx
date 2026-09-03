@@ -6,6 +6,7 @@ import logoHistoria from '../assets/logos/logo-historia.jpg';
 const Home = () => {
     return (
         <div className="home-container">
+            <Link to="/registro" className="home-register-link">Crear cuenta</Link>
             <div className="split-screen left">
                 <div className="content">
                     <img src={logoNaturales} alt="Logo Naturales" className="logo-museo" />

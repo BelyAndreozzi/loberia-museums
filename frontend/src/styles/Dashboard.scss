@@ -325,6 +325,35 @@
                     background-color: $color-primario-hover;
                 }
             }
+
+            .btn-descargar {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background-color: #1d6f42;
+                color: $color-blanco-puro;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-family: inherit;
+                font-weight: 600;
+                transition: background-color 0.2s, opacity 0.2s;
+
+                span {
+                    font-size: 1.15rem;
+                    line-height: 1;
+                }
+
+                &:hover:not(:disabled) {
+                    background-color: #155634;
+                }
+
+                &:disabled {
+                    cursor: not-allowed;
+                    opacity: 0.5;
+                }
+            }
         }
 
         .mensaje-carga {
@@ -634,6 +663,17 @@
 
             .content-area {
                 padding: 22px 16px;
+
+                .card-header {
+                    .top-table {
+                        flex-direction: column;
+                        gap: 14px;
+
+                        .acciones-header {
+                            flex-wrap: wrap;
+                        }
+                    }
+                }
             }
         }
     }

@@ -3,6 +3,17 @@
 .home-container {
     display: flex;
     height: 100vh;
+    position: relative;
+
+    .home-register-link {
+        position: absolute;
+        top: 22px;
+        right: 26px;
+        z-index: 2;
+        color: $color-primario-hover;
+        font-weight: 700;
+        font-size: .9rem;
+    }
 
     .split-screen {
         flex: 1; 
