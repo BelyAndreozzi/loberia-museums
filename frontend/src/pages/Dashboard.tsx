@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/useAuth';
 import '../styles/Dashboard.scss';
 import FormularioPieza from '../components/FormularioPieza';
 import ModalDetalles from '../components/ModalDetalles';
@@ -23,12 +24,10 @@ const nombresInventario: Record<number, string> = {
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    // Simulamos un usuario logueado (en un caso real, esto vendría del backend)
-    const [usuario] = useState({
-        nombre: 'Belén',
-        rol: 'Administradora',
-        museo_id: 1
-    });
+    const { usuario, cargando: sesionCargando, logout, fetchConSesion } = useAuth();
+    const [parametros] = useSearchParams();
+    const museoId = Number(parametros.get('museo_id')) === 2 ? 2 : 1;
+    const estaAutenticado = usuario !== null;
 
     const [piezas, setPiezas] = useState([]);
     const [estadisticas, setEstadisticas] = useState(estadisticasIniciales);
@@ -37,14 +36,10 @@ const Dashboard = () => {
     const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
     const [piezaAEditar, setPiezaAEditar] = useState<any>(null);
 
-    // Estado para controlar qué pieza se está viendo en el modal (null si está cerrado)
     const [piezaSeleccionada, setPiezaSeleccionada] = useState<any>(null);
 
-    // Guarda la pieza que el usuario quiere borrar (null si no hay ninguna en proceso de borrado)
     const [piezaAEliminar, setPiezaAEliminar] = useState<any>(null);
-    // Array para guardar los IDs de las piezas tildadas
     const [idsSeleccionados, setIdsSeleccionados] = useState<number[]>([]);
-    // Estado para controlar el modal de confirmación masiva
     const [modalMasivoAbierto, setModalMasivoAbierto] = useState(false);
 
     const [filtros, setFiltros] = useState({
@@ -58,18 +53,10 @@ const Dashboard = () => {
 
     const cerrarSesion = async (evento: ReactMouseEvent<HTMLAnchorElement>) => {
         evento.preventDefault();
-
-        try {
-            await fetch('http://localhost:3000/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-        } catch (error) {
-            console.error('Error al cerrar sesión:', error);
-        } finally {
-            navigate('/');
-        }
+        await logout();
+        navigate('/');
     };
+
     useEffect(() => {
         const manejarClicAfuera = (evento: MouseEvent) => {
             const contenedor = document.getElementById('contenedor-perfil-usuario');
@@ -86,14 +73,14 @@ const Dashboard = () => {
     const cargarDatos = async () => {
         try {
             const params = new URLSearchParams({
-                museo_id: usuario.museo_id.toString(),
+                museo_id: museoId.toString(),
             });
 
             if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
             if (filtros.estado_conservacion) params.append('estado_conservacion', filtros.estado_conservacion);
-            if (filtros.categoria && usuario.museo_id === 1) params.append('categoria', filtros.categoria);
+            if (filtros.categoria && museoId === 1) params.append('categoria', filtros.categoria);
 
-            const respuesta = await fetch(`http://localhost:3000/api/piezas?${params.toString()}`);
+            const respuesta = await fetchConSesion(`/api/piezas?${params.toString()}`);
             if (respuesta.ok) {
                 const datos = await respuesta.json();
                 setPiezas(datos);
@@ -107,8 +94,8 @@ const Dashboard = () => {
         setCargandoEstadisticas(true);
 
         try {
-            const respuesta = await fetch(
-                `http://localhost:3000/api/piezas/estadisticas?museo_id=${usuario.museo_id}`
+            const respuesta = await fetchConSesion(
+                `/api/piezas/estadisticas?museo_id=${museoId}`
             );
 
             if (respuesta.ok) {
@@ -121,7 +108,6 @@ const Dashboard = () => {
         }
     };
 
-    // Paso 1: El usuario hace clic en eliminar y abrimos el modal de advertencia
     const solicitarEliminacion = (piezaOId: any) => {
         const piezaEncontrada = typeof piezaOId === 'object'
             ? piezaOId
@@ -130,12 +116,11 @@ const Dashboard = () => {
         setPiezaAEliminar(piezaEncontrada);
     };
 
-    // Paso 2: El usuario confirma en el modal y disparamos el DELETE al backend
     const confirmarEliminacion = async () => {
         if (!piezaAEliminar) return;
 
         try {
-            const respuesta = await fetch(`http://localhost:3000/api/piezas/${piezaAEliminar.id}`, {
+            const respuesta = await fetchConSesion(`/api/piezas/${piezaAEliminar.id}`, {
                 method: 'DELETE',
             });
 
@@ -143,15 +128,16 @@ const Dashboard = () => {
                 setPiezaAEliminar(null);
                 cargarDatos();
                 cargarEstadisticas();
+            } else if (respuesta.status === 401 || respuesta.status === 403) {
+                alert('No tienes permisos o tu sesión expiró. Inicia sesión nuevamente.');
             } else {
-                alert('Hubo un error al intentar eliminar la pieza.');
+                alert('No se pudo eliminar la pieza. Intenta nuevamente.');
             }
         } catch (error) {
             console.error('Error de red:', error);
         }
     };
 
-    // Funciones para manejar la selección de piezas en la tabla
     const toggleSeleccion = (id: number) => {
         if (idsSeleccionados.includes(id)) {
             setIdsSeleccionados(idsSeleccionados.filter(itemId => itemId !== id));
@@ -170,7 +156,7 @@ const Dashboard = () => {
 
     const confirmarBorradoMasivo = async () => {
         try {
-            const respuesta = await fetch('http://localhost:3000/api/piezas', {
+            const respuesta = await fetchConSesion(`/api/piezas`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: idsSeleccionados })
@@ -181,8 +167,10 @@ const Dashboard = () => {
                 setModalMasivoAbierto(false);
                 cargarDatos();
                 cargarEstadisticas();
+            } else if (respuesta.status === 401 || respuesta.status === 403) {
+                alert('No tienes permisos o tu sesión expiró. Inicia sesión nuevamente.');
             } else {
-                alert('Hubo un error al intentar eliminar las piezas seleccionadas.');
+                alert('No se pudieron eliminar las piezas seleccionadas. Intenta nuevamente.');
             }
         } catch (error) {
             console.error('Error de red:', error);
@@ -197,11 +185,19 @@ const Dashboard = () => {
 
     useEffect(() => {
         cargarDatos();
-    }, [filtros]);
+    }, [filtros, museoId]);
 
     useEffect(() => {
         cargarEstadisticas();
-    }, []);
+    }, [museoId]);
+
+    if (sesionCargando) {
+        return <div className="dashboard-loading">Cargando sesión...</div>;
+    }
+
+    const usuarioParaFormulario = usuario
+        ? { id: usuario.id, nombre: usuario.username, rol: usuario.rol, museo_id: museoId }
+        : { id: null, nombre: 'Visitante', rol: 'Consulta pública', museo_id: museoId };
 
     return (
         <div className="dashboard-container">
@@ -218,17 +214,25 @@ const Dashboard = () => {
                 </div>
                 <div className="sidebar-context">
                     <span>Inventario actual</span>
-                    <strong>{nombresInventario[usuario.museo_id]}</strong>
+                    <strong>{nombresInventario[museoId]}</strong>
                 </div>
                 <nav className="sidebar-nav">
                     <ul>
                         <li className={!mostrandoFormulario ? "active" : ""}>
                             <button onClick={() => { setMostrandoFormulario(false); setSidebarAbierta(false); }}>Mi Inventario</button>
                         </li>
-                        <li className={mostrandoFormulario ? "active" : ""}>
-                            <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
-                        </li>
-                        <li><Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>Cerrar Sesión</Link></li>
+                        {estaAutenticado && (
+                            <li className={mostrandoFormulario ? "active" : ""}>
+                                <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
+                            </li>
+                        )}
+                        {estaAutenticado && (
+                            <li>
+                                <Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>
+                                    Cerrar Sesión
+                                </Link>
+                            </li>
+                        )}
                     </ul>
                 </nav>
             </aside>
@@ -248,7 +252,7 @@ const Dashboard = () => {
                     </button>
                     <div className="header-title">
                         <h1>
-                            Inventario de {nombresInventario[usuario.museo_id]}
+                            Inventario de {nombresInventario[museoId]}
                         </h1>
                     </div>
 
@@ -258,18 +262,24 @@ const Dashboard = () => {
                             onClick={() => setMenuAbierto(!menuAbierto)}
                             style={{ cursor: 'pointer' }}
                         >
-                            <div className="avatar">{usuario.nombre.charAt(0)}</div>
+                            <div className="avatar">{usuario?.username?.charAt(0) ?? 'V'}</div>
                             <div className="user-info">
-                                <span className="user-name">Hola, {usuario.nombre}</span>
-                                <span className="user-role">{usuario.rol}</span>
+                                <span className="user-name">Hola, {usuario?.username ?? 'Visitante'}</span>
+                                <span className="user-role">{usuario?.rol ?? 'Consulta pública'}</span>
                             </div>
                         </div>
 
                         {menuAbierto && (
                             <div className="user-dropdown-menu">
-                                <Link to="/" className="dropdown-item salir" onClick={cerrarSesion}>
-                                    Cerrar Sesión
-                                </Link>
+                                {estaAutenticado ? (
+                                    <Link to="/" className="dropdown-item salir" onClick={cerrarSesion}>
+                                        Cerrar Sesión
+                                    </Link>
+                                ) : (
+                                    <Link to="/login" className="dropdown-item">
+                                        Iniciar sesión
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </div>
@@ -279,7 +289,7 @@ const Dashboard = () => {
                 <section className="content-area">
                     {mostrandoFormulario ? (
                         <FormularioPieza
-                            usuario={usuario}
+                            usuario={usuarioParaFormulario}
                             piezaAEditar={piezaAEditar}
                             alGuardar={() => {
                                 setMostrandoFormulario(false);
@@ -298,8 +308,8 @@ const Dashboard = () => {
                                         type="button"
                                         onClick={() => descargarInventarioCsv(
                                             piezas,
-                                            nombresInventario[usuario.museo_id],
-                                            usuario.museo_id
+                                            nombresInventario[museoId],
+                                            museoId
                                         )}
                                         disabled={piezas.length === 0}
                                         title="Descargar el inventario filtrado en CSV"
@@ -307,7 +317,7 @@ const Dashboard = () => {
                                         <span aria-hidden="true">⇩</span>
                                         Descargar Inventario
                                     </button>
-                                    {idsSeleccionados.length > 0 && (
+                                    {estaAutenticado && idsSeleccionados.length > 0 && (
                                         <button
                                             className="btn-peligro-masivo"
                                             onClick={() => setModalMasivoAbierto(true)}
@@ -325,9 +335,11 @@ const Dashboard = () => {
                                             Eliminar seleccionados ({idsSeleccionados.length})
                                         </button>
                                     )}
-                                    <button className="btn-agregar" onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); }}>
-                                        Nueva Pieza
-                                    </button>
+                                    {estaAutenticado && (
+                                        <button className="btn-agregar" onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); }}>
+                                            Nueva Pieza
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -336,7 +348,6 @@ const Dashboard = () => {
                                 cargando={cargandoEstadisticas}
                             />
 
-                            {/* Barra de Búsqueda y Filtros */}
                             <div className="filtros-container">
                                 <input
                                     type="text"
@@ -358,8 +369,7 @@ const Dashboard = () => {
                                     <option value="Malo">Malo</option>
                                 </select>
 
-                                {/* Renderizado condicional del filtro de categorías */}
-                                {usuario.museo_id === 1 && (
+                                {museoId === 1 && (
                                     <select
                                         className="select-filtro"
                                         value={filtros.categoria}
@@ -373,7 +383,6 @@ const Dashboard = () => {
                                     </select>
                                 )}
 
-                                {/* Botón para limpiar rápidamente si hay filtros activos */}
                                 {(filtros.busqueda || filtros.estado_conservacion || filtros.categoria) && (
                                     <button
                                         className="btn-limpiar-filtros"
@@ -389,13 +398,15 @@ const Dashboard = () => {
                                 <table className="data-table">
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '45px', textAlign: 'center' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    onChange={toggleSeleccionarTodo}
-                                                    checked={piezas.length > 0 && idsSeleccionados.length === piezas.length}
-                                                />
-                                            </th>
+                                            {estaAutenticado && (
+                                                <th style={{ width: '45px', textAlign: 'center' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        onChange={toggleSeleccionarTodo}
+                                                        checked={piezas.length > 0 && idsSeleccionados.length === piezas.length}
+                                                    />
+                                                </th>
+                                            )}
                                             <th>Museo</th>
                                             <th>N° Inventario</th>
                                             <th>Designación / Nombre</th>
@@ -407,20 +418,22 @@ const Dashboard = () => {
                                     <tbody>
                                         {piezas.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="mensaje-vacio">
+                                                <td colSpan={estaAutenticado ? 7 : 6} className="mensaje-vacio">
                                                     Completemos el patrimonio; ¡agregá una pieza!
                                                 </td>
                                             </tr>
                                         ) : (
                                             piezas.map((pieza: any) => (
                                                 <tr key={pieza.id}>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={idsSeleccionados.includes(pieza.id)}
-                                                            onChange={() => toggleSeleccion(pieza.id)}
-                                                        />
-                                                    </td>
+                                                    {estaAutenticado && (
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={idsSeleccionados.includes(pieza.id)}
+                                                                onChange={() => toggleSeleccion(pieza.id)}
+                                                            />
+                                                        </td>
+                                                    )}
                                                     <td>
                                                         <span className={`badge-museo ${pieza.museo_id === 1 ? 'naturales' : 'historia'}`}>
                                                             {pieza.nombre_museo}
@@ -435,12 +448,16 @@ const Dashboard = () => {
                                                             <button className="btn-accion" onClick={() => setPiezaSeleccionada(pieza)}>
                                                                 Ver Detalles
                                                             </button>
-                                                            <button className="btn-accion btn-editar" onClick={() => iniciarEdicion(pieza)} title="Editar">
-                                                                ✏️
-                                                            </button>
-                                                            <button className="btn-accion btn-eliminar" onClick={() => solicitarEliminacion(pieza)} title="Eliminar">
-                                                                🗑️
-                                                            </button>
+                                                            {estaAutenticado && (
+                                                                <>
+                                                                    <button className="btn-accion btn-editar" onClick={() => iniciarEdicion(pieza)} title="Editar">
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button className="btn-accion btn-eliminar" onClick={() => solicitarEliminacion(pieza)} title="Eliminar">
+                                                                        🗑️
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -453,14 +470,12 @@ const Dashboard = () => {
                     )}
                 </section>
             </main>
-            {/* Modal de detalles */}
             <ModalDetalles
                 pieza={piezaSeleccionada}
                 alCerrar={() => setPiezaSeleccionada(null)}
                 alEliminar={(piezaBorrar) => solicitarEliminacion(piezaBorrar)}
                 alEditar={(piezaEditar) => iniciarEdicion(piezaEditar)}
             />
-            {/* Modal de confirmación de borrado */}
             <ModalConfirmacion
                 isOpen={Boolean(piezaAEliminar)}
                 titulo="Confirmar eliminación"
@@ -468,7 +483,6 @@ const Dashboard = () => {
                 onConfirmar={confirmarEliminacion}
                 onCancelar={() => setPiezaAEliminar(null)}
             />
-            {/* Modal de confirmación de borrado masivo */}
             <ModalConfirmacion
                 isOpen={modalMasivoAbierto}
                 titulo="Eliminación masiva"

@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/useAuth';
+import { API_URL } from '../config';
 import '../styles/Auth.scss';
-
-const API_URL = 'http://localhost:3000';
+import logoNaturales from '../assets/logos/logo-naturales.jpg';
+import logoHistoria from '../assets/logos/logo-historia.jpg';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const [datos, setDatos] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
+    const [sesionActiva, setSesionActiva] = useState(false);
 
     const actualizarCampo = (campo: 'email' | 'password', valor: string) => {
         setDatos({ ...datos, [campo]: valor });
@@ -31,10 +35,16 @@ const Login = () => {
             const resultado = await respuesta.json();
 
             if (!respuesta.ok) {
+                if (respuesta.status === 409 && resultado.error === 'Ya estás logueado.') {
+                    setSesionActiva(true);
+                }
                 setError(resultado.error || 'No se pudo iniciar sesión.');
                 return;
             }
 
+            if (resultado.usuario) {
+                login(resultado.usuario);
+            }
             navigate('/dashboard');
         } catch {
             setError('No se pudo conectar con el servidor.');
@@ -79,6 +89,19 @@ const Login = () => {
                         {cargando ? 'Ingresando...' : 'Ingresar'}
                     </button>
                 </form>
+
+                {sesionActiva && (
+                    <div className="museum-links">
+                        <Link to="/dashboard?museo_id=1" className="museum-link">
+                            <img src={logoNaturales} alt="" />
+                            <span>Ciencias Naturales</span>
+                        </Link>
+                        <Link to="/dashboard?museo_id=2" className="museum-link">
+                            <img src={logoHistoria} alt="" />
+                            <span>Museo Histórico</span>
+                        </Link>
+                    </div>
+                )}
 
                 <p className="auth-footer">¿Todavía no tenés una cuenta? <Link to="/registro">Crear cuenta</Link></p>
             </section>

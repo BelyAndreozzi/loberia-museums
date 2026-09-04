@@ -29,6 +29,10 @@
 .auth-form button, .auth-link-button { display: inline-block; padding: 13px 18px; border: 0; border-radius: 5px; background: $color-primario; color: white; font: inherit; font-weight: 700; text-align: center; cursor: pointer; }
 .auth-form button:hover, .auth-link-button:hover { background: $color-primario-hover; }
 .auth-form button:disabled { opacity: .65; cursor: wait; }
+.museum-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 18px; }
+.museum-link { display: grid; gap: 8px; justify-items: center; padding: 10px; border: 1px solid #ccd8c9; color: $color-texto-titulos; font-size: .85rem; font-weight: 700; text-align: center; }
+.museum-link:hover { border-color: $color-primario; background: #f4faf2; }
+.museum-link img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
 .auth-success { padding: 12px; background: #edf8ed; color: #27632a !important; border-left: 3px solid $color-primario; }
 .auth-footer { margin-top: 24px; font-size: .9rem; text-align: center; }
 .auth-footer a { color: $color-primario-hover; font-weight: 700; }

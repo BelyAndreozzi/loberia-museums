@@ -4,11 +4,13 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { validarRegistro } = require('../validators/auth');
 const { enviarEmailVerificacion } = require('../services/emailService');
+const autenticarAccessToken = require('../middleware/autenticacion');
 const {
     REFRESH_TOKEN_MAX_AGE,
     crearAccessToken,
     crearRefreshToken,
-    hashRefreshToken
+    hashRefreshToken,
+    verificarAccessToken
 } = require('../services/tokenService');
 
 const router = express.Router();
@@ -20,16 +22,14 @@ const HORAS_VALIDEZ_TOKEN = 24;
 const opcionesCookie = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     path: '/'
 };
 
-const opcionesRefreshCookie = { ...opcionesCookie, path: '/api/auth' };
-const opcionesCookieAnterior = { ...opcionesCookie, path: '/api/auth' };
+const opcionesRefreshCookie = { ...opcionesCookie, path: '/' };
 
 const limpiarCookiesSesion = res => {
     res.clearCookie('jwt', opcionesCookie);
-    res.clearCookie('jwt', opcionesCookieAnterior);
     res.clearCookie('refreshToken', opcionesRefreshCookie);
 };
 
@@ -53,6 +53,15 @@ const establecerTokens = async (res, usuario, client = pool) => {
 };
 
 router.post('/login', async (req, res) => {
+    if (req.cookies.jwt) {
+        try {
+            verificarAccessToken(req.cookies.jwt);
+            return res.status(409).json({ error: 'Ya estás logueado.' });
+        } catch {
+            limpiarCookiesSesion(res);
+        }
+    }
+
     const datos = req.body || {};
     const email = typeof datos.email === 'string' ? datos.email.trim().toLowerCase() : '';
     const password = typeof datos.contraseña === 'string'
@@ -93,6 +102,24 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error('Error al iniciar sesión:', error);
         return res.status(500).json({ error: 'No se pudo iniciar sesión.' });
+    }
+});
+
+router.get('/me', autenticarAccessToken, async (req, res) => {
+    try {
+        const resultado = await pool.query(
+            'SELECT id, username, rol, museo_id FROM usuarios WHERE id = $1',
+            [req.user.id]
+        );
+
+        if (resultado.rowCount === 0) {
+            return res.status(401).json({ error: 'La sesión ya no es válida.' });
+        }
+
+        return res.json({ usuario: resultado.rows[0] });
+    } catch (error) {
+        console.error('Error al consultar la sesión:', error);
+        return res.status(500).json({ error: 'No se pudo consultar la sesión.' });
     }
 });
 
@@ -185,10 +212,10 @@ router.post('/register', async (req, res) => {
         try {
             await client.query('BEGIN');
             const resultado = await client.query(
-                `INSERT INTO usuarios (username, email, password_hash, token_verificacion_hash, token_verificacion_expira)
-                 VALUES ($1, $2, $3, $4, $5)
-                 RETURNING id, username, email, fecha_registro`,
-                [valores.username, valores.email, passwordHash, tokenVerificacionHash, tokenExpira]
+                `INSERT INTO usuarios (username, email, password_hash, museo_id, token_verificacion_hash, token_verificacion_expira)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING id, username, email, museo_id, fecha_registro`,
+                [valores.username, valores.email, passwordHash, valores.museo_id, tokenVerificacionHash, tokenExpira]
             );
 
             await enviarEmailVerificacion(valores.email, tokenVerificacion);

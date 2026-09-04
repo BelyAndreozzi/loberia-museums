@@ -1,0 +1,111 @@
+@import 'variables';
+
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: $color-blanco-puro;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    z-index: 50;
+
+    .header-logo {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: $color-texto-titulos;
+        text-decoration: none;
+    }
+
+    .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .header-user-info {
+            font-size: 0.9rem;
+            color: $color-texto-parrafos;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            strong {
+                color: $color-texto-titulos;
+            }
+
+            .header-user-role {
+                background-color: $color-fondo-claro;
+                color: $color-primario;
+                font-size: 0.75rem;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 12px;
+            }
+        }
+
+        .btn-header {
+            font-family: $fuente-principal;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-login {
+            color: $color-texto-titulos;
+            background-color: transparent;
+            border: 2px solid $color-fondo-claro;
+
+            &:hover {
+                background-color: $color-fondo-claro;
+            }
+        }
+
+        .btn-register {
+            color: $color-blanco-puro;
+            background-color: $color-primario;
+
+            &:hover {
+                background-color: $color-primario-hover;
+            }
+        }
+
+        .btn-logout {
+            color: $color-texto-parrafos;
+            background-color: transparent;
+            border: 2px solid #eee;
+
+            &:hover {
+                color: #d32f2f;
+                border-color: #d32f2f;
+            }
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .site-header {
+        padding: 0 16px;
+
+        .header-nav {
+            gap: 10px;
+
+            .header-user-info {
+                display: none;
+            }
+
+            .btn-header {
+                padding: 6px 14px;
+                font-size: 0.8rem;
+            }
+        }
+    }
+}

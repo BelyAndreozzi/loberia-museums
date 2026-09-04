@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { API_URL } from '../config';
 import '../styles/Auth.scss';
 
 const VerificarEmail = () => {
@@ -14,7 +15,7 @@ const VerificarEmail = () => {
             return;
         }
 
-        fetch(`http://localhost:3000/api/auth/verify-email?token=${encodeURIComponent(token)}`)
+        fetch(`${API_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`)
             .then(async respuesta => {
                 const resultado = await respuesta.json();
                 if (!respuesta.ok) throw new Error(resultado.error);

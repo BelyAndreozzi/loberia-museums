@@ -4,11 +4,7 @@ const pool = require('../db');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const museoId = Number(req.query.museo_id);
-
-    if (!Number.isInteger(museoId) || museoId <= 0) {
-        return res.status(400).json({ error: 'Se requiere un museo_id válido' });
-    }
+    const museoId = req.user.museo_id;
 
     try {
         const [totalResult, estadosResult, recientesResult] = await Promise.all([
