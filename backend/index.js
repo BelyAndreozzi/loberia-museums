@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const pool = require('./db');
 const estadisticasRouter = require('./routes/estadisticas');
 const authRouter = require('./routes/auth');
+const usuariosRouter = require('./routes/usuarios');
 const autenticarAccessToken = require('./middleware/autenticacion');
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/auth', authRouter);
+app.use('/api/usuarios', autenticarAccessToken, usuariosRouter);
 app.use('/api/piezas', autenticarAccessToken);
 
 // Ruta de prueba para verificar la conexión a la base de datos

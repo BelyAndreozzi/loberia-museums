@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     username VARCHAR(30) NOT NULL,
     email VARCHAR(254) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    rol VARCHAR(20) NOT NULL DEFAULT 'encargado',
+    rol VARCHAR(20) NOT NULL DEFAULT 'usuario',
     museo_id INTEGER,
     email_verificado BOOLEAN NOT NULL DEFAULT FALSE,
     token_verificacion_hash VARCHAR(64),
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT usuarios_username_formato CHECK (username ~ '^[A-Za-z][A-Za-z0-9_.-]{2,29}$'),
     CONSTRAINT usuarios_email_no_vacio CHECK (length(trim(email)) > 3),
-    CONSTRAINT usuarios_rol_valido CHECK (rol IN ('admin', 'encargado'))
+    CONSTRAINT usuarios_rol_valido CHECK (rol IN ('encargado', 'admin', 'usuario'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS usuarios_username_unico
@@ -31,10 +31,10 @@ CREATE TABLE IF NOT EXISTS museos (
     nombre VARCHAR(100) NOT NULL
 );
 
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'encargado';
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'usuario';
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS museo_id INTEGER;
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_valido;
-ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_valido CHECK (rol IN ('admin', 'encargado'));
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_valido CHECK (rol IN ('encargado', 'admin', 'usuario'));
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_museo_id_fkey;
 ALTER TABLE usuarios ADD CONSTRAINT usuarios_museo_id_fkey FOREIGN KEY (museo_id) REFERENCES museos(id) ON DELETE SET NULL;
 

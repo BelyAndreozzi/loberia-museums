@@ -226,6 +226,13 @@ const Dashboard = () => {
                                 <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
                             </li>
                         )}
+                        {estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin') && (
+                            <li>
+                                <Link to="/admin" onClick={() => setSidebarAbierta(false)}>
+                                    Gestión de Usuarios
+                                </Link>
+                            </li>
+                        )}
                         {estaAutenticado && (
                             <li>
                                 <Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>

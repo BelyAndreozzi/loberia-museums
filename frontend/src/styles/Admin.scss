@@ -1,0 +1,80 @@
+.admin-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+
+    h1 { margin: 0; font-size: 1.6rem; }
+}
+
+.admin-subtitle {
+    margin: 4px 0 0;
+    color: #666;
+    font-size: .9rem;
+}
+
+.btn-volver {
+    padding: 10px 18px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .2s;
+
+    &:hover { border-color: #4a8c4a; }
+}
+
+.admin-table {
+    width: 100%;
+}
+
+.badge-rol {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: capitalize;
+
+    &.encargado { background: #e8f5e9; color: #2e7d32; }
+    &.admin { background: #e3f2fd; color: #1565c0; }
+    &.usuario { background: #f5f5f5; color: #616161; }
+}
+
+.select-rol {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font: inherit;
+    cursor: pointer;
+
+    &:focus { outline: none; border-color: #4a8c4a; }
+}
+
+.text-muted {
+    color: #999;
+    font-size: .85rem;
+}
+
+.admin-loading {
+    padding: 60px;
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.admin-error {
+    padding: 12px;
+    background: #fdecea;
+    color: #b3261e;
+    border-left: 3px solid #b3261e;
+    margin-bottom: 16px;
+}

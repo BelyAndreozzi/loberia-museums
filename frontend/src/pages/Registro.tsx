@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../config';
 import '../styles/Auth.scss';
+import logoNaturales from '../assets/logos/logo-naturales.jpg';
+import logoHistoria from '../assets/logos/logo-historia.jpg';
 
 const Registro = () => {
     const [datos, setDatos] = useState({
@@ -70,14 +72,26 @@ const Registro = () => {
                         <input type="email" value={datos.email} onChange={evento => actualizarCampo('email', evento.target.value)} autoComplete="email" required />
                         {errores.email && <small>{errores.email}</small>}
                     </label>
-                    <label>
-                        Museo
-                        <select value={datos.museo_id} onChange={evento => actualizarCampo('museo_id', evento.target.value)} required>
-                            <option value="1">Ciencias Naturales</option>
-                            <option value="2">Museo Histórico</option>
-                        </select>
+
+                    <div className="museum-selector">
+                        <span className="museum-selector-label">Museo</span>
+                        <div className="museum-options">
+                            <label className={`museum-option ${datos.museo_id === '1' ? 'selected' : ''}`}>
+                                <input type="radio" name="museo_id" value="1" checked={datos.museo_id === '1'} onChange={e => actualizarCampo('museo_id', e.target.value)} />
+                                <img src={logoNaturales} alt="Cs. Naturales" />
+                                <span className="museum-option-name">Ciencias Naturales</span>
+                                <span className="museum-option-check">{datos.museo_id === '1' ? '●' : '○'}</span>
+                            </label>
+                            <label className={`museum-option ${datos.museo_id === '2' ? 'selected' : ''}`}>
+                                <input type="radio" name="museo_id" value="2" checked={datos.museo_id === '2'} onChange={e => actualizarCampo('museo_id', e.target.value)} />
+                                <img src={logoHistoria} alt="Museo Histórico" />
+                                <span className="museum-option-name">Museo Histórico</span>
+                                <span className="museum-option-check">{datos.museo_id === '2' ? '●' : '○'}</span>
+                            </label>
+                        </div>
                         {errores.museo_id && <small>{errores.museo_id}</small>}
-                    </label>
+                    </div>
+
                     <label>
                         Contraseña
                         <input type="password" value={datos.password} onChange={evento => actualizarCampo('password', evento.target.value)} autoComplete="new-password" required />
