@@ -28,6 +28,7 @@ const Dashboard = () => {
     const [parametros] = useSearchParams();
     const museoId = Number(parametros.get('museo_id')) === 2 ? 2 : 1;
     const estaAutenticado = usuario !== null;
+    const puedeModificar = estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin');
 
     const [piezas, setPiezas] = useState([]);
     const [estadisticas, setEstadisticas] = useState(estadisticasIniciales);
@@ -221,9 +222,16 @@ const Dashboard = () => {
                         <li className={!mostrandoFormulario ? "active" : ""}>
                             <button onClick={() => { setMostrandoFormulario(false); setSidebarAbierta(false); }}>Mi Inventario</button>
                         </li>
-                        {estaAutenticado && (
+                        {puedeModificar && (
                             <li className={mostrandoFormulario ? "active" : ""}>
                                 <button onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); setSidebarAbierta(false); }}>Cargar Pieza</button>
+                            </li>
+                        )}
+                        {estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin') && (
+                            <li>
+                                <Link to="/admin" onClick={() => setSidebarAbierta(false)}>
+                                    Gestión de Usuarios
+                                </Link>
                             </li>
                         )}
                         {estaAutenticado && (
@@ -283,7 +291,6 @@ const Dashboard = () => {
                             </div>
                         )}
                     </div>
-
                 </header>
 
                 <section className="content-area">
@@ -317,7 +324,7 @@ const Dashboard = () => {
                                         <span aria-hidden="true">⇩</span>
                                         Descargar Inventario
                                     </button>
-                                    {estaAutenticado && idsSeleccionados.length > 0 && (
+                                    {puedeModificar && idsSeleccionados.length > 0 && (
                                         <button
                                             className="btn-peligro-masivo"
                                             onClick={() => setModalMasivoAbierto(true)}
@@ -335,7 +342,7 @@ const Dashboard = () => {
                                             Eliminar seleccionados ({idsSeleccionados.length})
                                         </button>
                                     )}
-                                    {estaAutenticado && (
+                                    {puedeModificar && (
                                         <button className="btn-agregar" onClick={() => { setPiezaAEditar(null); setMostrandoFormulario(true); }}>
                                             Nueva Pieza
                                         </button>
@@ -393,12 +400,11 @@ const Dashboard = () => {
                                 )}
                             </div>
 
-
                             <div className="table-responsive">
                                 <table className="data-table">
                                     <thead>
                                         <tr>
-                                            {estaAutenticado && (
+                                            {puedeModificar && (
                                                 <th style={{ width: '45px', textAlign: 'center' }}>
                                                     <input
                                                         type="checkbox"
@@ -418,14 +424,14 @@ const Dashboard = () => {
                                     <tbody>
                                         {piezas.length === 0 ? (
                                             <tr>
-                                                <td colSpan={estaAutenticado ? 7 : 6} className="mensaje-vacio">
+                                                <td colSpan={puedeModificar ? 7 : 6} className="mensaje-vacio">
                                                     Completemos el patrimonio; ¡agregá una pieza!
                                                 </td>
                                             </tr>
                                         ) : (
                                             piezas.map((pieza: any) => (
                                                 <tr key={pieza.id}>
-                                                    {estaAutenticado && (
+                                                    {puedeModificar && (
                                                         <td style={{ textAlign: 'center' }}>
                                                             <input
                                                                 type="checkbox"
@@ -448,7 +454,7 @@ const Dashboard = () => {
                                                             <button className="btn-accion" onClick={() => setPiezaSeleccionada(pieza)}>
                                                                 Ver Detalles
                                                             </button>
-                                                            {estaAutenticado && (
+                                                            {puedeModificar && (
                                                                 <>
                                                                     <button className="btn-accion btn-editar" onClick={() => iniciarEdicion(pieza)} title="Editar">
                                                                         ✏️
@@ -490,9 +496,7 @@ const Dashboard = () => {
                 onConfirmar={confirmarBorradoMasivo}
                 onCancelar={() => setModalMasivoAbierto(false)}
             />
-
         </div>
-
     );
 };
 
