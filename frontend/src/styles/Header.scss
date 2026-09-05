@@ -5,20 +5,31 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background-color: $color-blanco-puro;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    height: 64px;
+    background-color: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid $color-border;
+    box-shadow: $shadow-sm;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 28px;
+    padding: 0 32px;
     z-index: 50;
 
     .header-logo {
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         color: $color-texto-titulos;
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: -0.02em;
+
+        &:hover {
+            color: $color-primario;
+        }
     }
 
     .header-nav {
@@ -27,23 +38,27 @@
         gap: 16px;
 
         .header-user-info {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             color: $color-texto-parrafos;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
 
             strong {
                 color: $color-texto-titulos;
+                font-weight: 600;
             }
 
             .header-user-role {
-                background-color: $color-fondo-claro;
-                color: $color-primario;
-                font-size: 0.75rem;
+                background-color: $color-primario-light;
+                color: $color-primario-hover;
+                border: 1px solid $color-primario-border;
+                font-size: 0.725rem;
                 font-weight: 600;
-                padding: 2px 8px;
-                border-radius: 12px;
+                padding: 3px 10px;
+                border-radius: $radius-full;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
         }
 
@@ -52,40 +67,48 @@
             font-size: 0.85rem;
             font-weight: 600;
             padding: 8px 18px;
-            border-radius: 20px;
+            border-radius: $radius-full;
             text-decoration: none;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-login {
             color: $color-texto-titulos;
             background-color: transparent;
-            border: 2px solid $color-fondo-claro;
+            border: 1px solid $color-border;
 
             &:hover {
-                background-color: $color-fondo-claro;
+                background-color: $color-fondo-base;
+                border-color: $color-border-hover;
             }
         }
 
         .btn-register {
             color: $color-blanco-puro;
             background-color: $color-primario;
+            box-shadow: $shadow-sm;
 
             &:hover {
                 background-color: $color-primario-hover;
+                box-shadow: $shadow-md;
+                transform: translateY(-1px);
             }
         }
 
         .btn-logout {
             color: $color-texto-parrafos;
             background-color: transparent;
-            border: 2px solid #eee;
+            border: 1px solid $color-border;
 
             &:hover {
-                color: #d32f2f;
-                border-color: #d32f2f;
+                color: #ef4444;
+                background-color: #fef2f2;
+                border-color: #fca5a5;
             }
         }
     }

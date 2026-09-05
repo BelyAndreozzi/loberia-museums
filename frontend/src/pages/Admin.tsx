@@ -8,7 +8,7 @@ import '../styles/Admin.scss';
 const Admin = () => {
     const { usuario, fetchConSesion } = useAuth();
     const navigate = useNavigate();
-    const [usuarios, setUsuarios] = useState<(Usuario & { museo_nombre: string })[]>([]);
+    const [usuarios, setUsuarios] = useState<(Usuario & { email?: string; museo_nombre: string })[]>([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
 

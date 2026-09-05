@@ -7,6 +7,7 @@ const estadisticasRouter = require('./routes/estadisticas');
 const authRouter = require('./routes/auth');
 const usuariosRouter = require('./routes/usuarios');
 const autenticarAccessToken = require('./middleware/autenticacion');
+const { requiereRol } = require('./middleware/autorizacion');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -34,7 +35,7 @@ app.get('/api/test-db', async (req, res) => {
 });
 
 // Ruta POST para crear una nueva pieza
-app.post('/api/piezas', async (req, res) => {
+app.post('/api/piezas', requiereRol('encargado', 'admin'), async (req, res) => {
     const {
         numero_inventario, nombre_designacion, estado_conservacion, procedencia, // Datos comunes
         categoria, ubicacion_museo, ubicacion_deposito, estanteria, estante, // Exclusivos Cs. Naturales
@@ -150,7 +151,7 @@ app.get('/api/piezas', async (req, res) => {
 });
 
 // Ruta DELETE para eliminar una pieza por su ID
-app.delete('/api/piezas/:id', async (req, res) => {
+app.delete('/api/piezas/:id', requiereRol('encargado', 'admin'), async (req, res) => {
     const { id } = req.params;
     const museoId = req.user.museo_id;
 
@@ -188,7 +189,7 @@ app.delete('/api/piezas/:id', async (req, res) => {
 });
 
 // Ruta DELETE masiva para eliminar múltiples piezas
-app.delete('/api/piezas', async (req, res) => {
+app.delete('/api/piezas', requiereRol('encargado', 'admin'), async (req, res) => {
     const { ids } = req.body;
     const museoId = req.user.museo_id;
 
@@ -222,7 +223,7 @@ app.delete('/api/piezas', async (req, res) => {
 });
 
 // Ruta PUT para actualizar una pieza existente
-app.put('/api/piezas/:id', async (req, res) => {
+app.put('/api/piezas/:id', requiereRol('encargado', 'admin'), async (req, res) => {
     const { id } = req.params;
     const {
         numero_inventario,

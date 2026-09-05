@@ -609,6 +609,43 @@
     }
 }
 
+@media (max-width: 768px) {
+    .dashboard-container {
+        .main-content {
+            .content-area {
+                .card-header {
+                    .top-table {
+                        .acciones-header {
+                            flex-direction: column;
+                            width: 100%;
+
+                            button,
+                            .btn-descargar,
+                            .btn-agregar,
+                            .btn-peligro-masivo {
+                                width: 100%;
+                                justify-content: center;
+                            }
+                        }
+                    }
+                }
+
+                .filtros-container {
+                    flex-direction: column;
+                    align-items: stretch;
+
+                    .input-busqueda,
+                    .select-filtro,
+                    .btn-limpiar-filtros {
+                        width: 100%;
+                        min-width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}
+
 @media (max-width: 560px) {
     .dashboard-container {
         .main-content {
@@ -678,4 +715,3 @@
         }
     }
 }
-

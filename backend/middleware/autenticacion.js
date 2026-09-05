@@ -37,7 +37,7 @@ const autenticarAccessToken = async (req, res, next) => {
         }
     }
 
-    // Si el JWT es válido, verificar que el refresh token exista en DB
+    // Si el JWT es válido, verificar que el refresh token exista en DB y obtener el rol actualizado
     if (payload) {
         if (!refreshToken) {
             limpiarCookies(res);
@@ -45,26 +45,24 @@ const autenticarAccessToken = async (req, res, next) => {
         }
         try {
             const resultado = await pool.query(
-                `SELECT 1 FROM refresh_tokens WHERE token_hash = $1 AND expira_en > CURRENT_TIMESTAMP`,
-                [hashRefreshToken(refreshToken)]
+                `SELECT u.id, u.rol, u.museo_id 
+                 FROM refresh_tokens rt
+                 JOIN usuarios u ON u.id = rt.usuario_id
+                 WHERE rt.token_hash = $1 AND rt.expira_en > CURRENT_TIMESTAMP AND u.id = $2`,
+                [hashRefreshToken(refreshToken), payload.id]
             );
             if (resultado.rowCount === 0) {
                 limpiarCookies(res);
                 return res.status(401).json({ error: 'La sesión expiró. Inicia sesión nuevamente.' });
             }
+
+            const usuarioDB = resultado.rows[0];
+            req.user = { id: usuarioDB.id, rol: usuarioDB.rol, museo_id: Number(usuarioDB.museo_id) };
+            return next();
         } catch (error) {
             console.error('Error al verificar refresh token:', error);
             return res.status(500).json({ error: 'No se pudo validar la sesión.' });
         }
-
-        const museoId = Number(payload.museo_id);
-        if (!Number.isInteger(museoId) || museoId <= 0) {
-            limpiarCookies(res);
-            return res.status(401).json({ error: 'El token no tiene un museo válido.' });
-        }
-
-        req.user = { ...payload, museo_id: museoId };
-        return next();
     }
 
     // JWT inválido/expirado — intentar auto-refresh con el refreshToken
