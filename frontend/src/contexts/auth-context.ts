@@ -1,9 +1,11 @@
 import { createContext } from 'react';
 
+export type RolUsuario = 'encargado' | 'admin' | 'usuario';
+
 export type Usuario = {
     id: number;
     username: string;
-    rol: string;
+    rol: RolUsuario;
     museo_id: number;
 };
 

@@ -211,3 +211,31 @@
         }
     }
 }
+
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 15px;
+
+        .modal-content {
+            max-width: 100%;
+            max-height: 90vh;
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 15px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+
+                button {
+                    width: 100%;
+                    margin-right: 0;
+                    margin-bottom: 0;
+                }
+            }
+        }
+    }
+}

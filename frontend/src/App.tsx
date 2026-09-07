@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Registro from './pages/Registro';
 import Login from './pages/Login';
 import VerificarEmail from './pages/VerificarEmail';
+import Admin from './pages/Admin';
 import './styles/global.scss';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/registro" element={<Registro />} />
           <Route path="/login" element={<Login />} />
           <Route path="/verificar-email" element={<VerificarEmail />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

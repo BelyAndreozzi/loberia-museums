@@ -10,14 +10,35 @@ body {
     font-family: $fuente-principal;
     background-color: $color-fondo-base;
     color: $color-texto-parrafos;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3 {
+h1, h2, h3, h4, h5, h6 {
     color: $color-texto-titulos;
+    letter-spacing: -0.02em;
 }
 
 a {
     text-decoration: none;
+    color: inherit;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+
+    &:hover {
+        background: #94a3b8;
+    }
 }

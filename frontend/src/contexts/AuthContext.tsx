@@ -68,6 +68,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUsuario(null);
         }
 
+        if (respuesta.headers.get('X-Session-Refreshed') === 'true') {
+            try {
+                const meResp = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
+                if (meResp.ok) {
+                    const { usuario: actualizado } = await meResp.json();
+                    if (actualizado) setUsuario(actualizado);
+                }
+            } catch {
+                // No actualizar si falla
+            }
+        }
+
         return respuesta;
     }, []);
 
