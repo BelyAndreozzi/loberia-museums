@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
+import { museoPorId } from '../museos';
 
 const nombresInventario: Record<number, string> = {
     1: 'Ciencias Naturales',
@@ -126,7 +127,7 @@ const DashboardLayout = ({ titulo, museoId, children }: Props) => {
                                         Cerrar Sesión
                                     </Link>
                                 ) : (
-                                    <Link to="/login" className="dropdown-item">
+                                    <Link to={museoPorId(museoId) ? `/login/${museoPorId(museoId)!.slug}` : '/login'} className="dropdown-item">
                                         Iniciar sesión
                                     </Link>
                                 )}

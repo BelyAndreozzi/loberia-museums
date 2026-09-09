@@ -48,7 +48,8 @@ const autenticarAccessToken = async (req, res, next) => {
                 `SELECT u.id, u.rol, u.museo_id 
                  FROM refresh_tokens rt
                  JOIN usuarios u ON u.id = rt.usuario_id
-                 WHERE rt.token_hash = $1 AND rt.expira_en > CURRENT_TIMESTAMP AND u.id = $2`,
+                 WHERE rt.token_hash = $1 AND rt.expira_en > CURRENT_TIMESTAMP AND u.id = $2
+                   AND rt.session_version = u.session_version`,
                 [hashRefreshToken(refreshToken), payload.id]
             );
             if (resultado.rowCount === 0) {
@@ -77,9 +78,10 @@ const autenticarAccessToken = async (req, res, next) => {
         await client.query('DELETE FROM refresh_tokens WHERE expira_en <= CURRENT_TIMESTAMP');
 
         const resultado = await client.query(
-            `DELETE FROM refresh_tokens
-             WHERE token_hash = $1 AND expira_en > CURRENT_TIMESTAMP
-             RETURNING usuario_id`,
+            `DELETE FROM refresh_tokens rt USING usuarios u
+             WHERE rt.token_hash = $1 AND rt.expira_en > CURRENT_TIMESTAMP
+               AND u.id = rt.usuario_id AND rt.session_version = u.session_version
+             RETURNING rt.usuario_id, rt.session_version`,
             [hashRefreshToken(refreshToken)]
         );
 
@@ -109,8 +111,8 @@ const autenticarAccessToken = async (req, res, next) => {
         const expira = new Date(Date.now() + REFRESH_TOKEN_MAX_AGE);
 
         await client.query(
-            `INSERT INTO refresh_tokens (usuario_id, token_hash, expira_en) VALUES ($1, $2, $3)`,
-            [usuario.id, hash, expira]
+            `INSERT INTO refresh_tokens (usuario_id, token_hash, expira_en, session_version) VALUES ($1, $2, $3, $4)`,
+            [usuario.id, hash, expira, resultado.rows[0].session_version]
         );
 
         await client.query('COMMIT');

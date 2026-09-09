@@ -2,9 +2,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const pool = require('../db');
-const { validarRegistro } = require('../validators/auth');
+const { validarRegistro, normalizarMuseoId } = require('../validators/auth');
 const { enviarEmailVerificacion } = require('../services/emailService');
 const autenticarAccessToken = require('../middleware/autenticacion');
+const { limitarLogin, limitarRegistro } = require('../middleware/authRateLimit');
 const {
     REFRESH_TOKEN_MAX_AGE,
     crearAccessToken,
@@ -41,9 +42,9 @@ const establecerTokens = async (res, usuario, client = pool) => {
     const expira = new Date(Date.now() + REFRESH_TOKEN_MAX_AGE);
 
     await client.query(
-        `INSERT INTO refresh_tokens (usuario_id, token_hash, expira_en)
-         VALUES ($1, $2, $3)`,
-        [usuario.id, refreshTokenHash, expira]
+        `INSERT INTO refresh_tokens (usuario_id, token_hash, expira_en, session_version)
+         VALUES ($1, $2, $3, $4)`,
+        [usuario.id, refreshTokenHash, expira, usuario.session_version]
     );
 
     res.cookie('jwt', accessToken, { ...opcionesCookie, maxAge: 24 * 60 * 60 * 1000 });
@@ -52,11 +53,26 @@ const establecerTokens = async (res, usuario, client = pool) => {
     return accessToken;
 };
 
-router.post('/login', async (req, res) => {
+router.post('/login', limitarLogin, async (req, res) => {
+    const museoId = normalizarMuseoId(req.body?.museo_id);
+    if (!museoId) {
+        return res.status(400).json({ error: 'Debes seleccionar un museo válido.' });
+    }
     if (req.cookies.jwt) {
         try {
-            verificarAccessToken(req.cookies.jwt);
-            return res.status(409).json({ error: 'Ya estás logueado.' });
+            const payload = verificarAccessToken(req.cookies.jwt);
+            const activa = req.cookies.refreshToken && await pool.query(
+                `SELECT u.museo_id FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id
+                 WHERE rt.token_hash = $1 AND u.id = $2 AND rt.expira_en > CURRENT_TIMESTAMP
+                   AND rt.session_version = u.session_version`,
+                [hashRefreshToken(req.cookies.refreshToken), payload.id]
+            );
+            if (activa?.rowCount) {
+                return res.status(409).json({ error: Number(activa.rows[0].museo_id) === museoId
+                    ? 'Ya estás logueado.'
+                    : 'Hay una sesión activa en otro museo. Cerrá esa sesión para continuar.' });
+            }
+            limpiarCookiesSesion(res);
         } catch {
             limpiarCookiesSesion(res);
         }
@@ -76,10 +92,10 @@ router.post('/login', async (req, res) => {
     try {
         await pool.query('DELETE FROM refresh_tokens WHERE expira_en <= CURRENT_TIMESTAMP');
         const resultado = await pool.query(
-            `SELECT id, username, password_hash, rol, museo_id, email_verificado
+            `SELECT id, username, password_hash, rol, museo_id, email_verificado, session_version
              FROM usuarios
-             WHERE lower(email) = $1`,
-            [email]
+             WHERE lower(email) = $1 AND museo_id = $2`,
+            [email, museoId]
         );
         const cuenta = resultado.rows[0];
         const passwordValida = cuenta ? await bcrypt.compare(password, cuenta.password_hash) : false;
@@ -134,9 +150,10 @@ router.post('/refresh', async (req, res) => {
         await client.query('BEGIN');
         await client.query('DELETE FROM refresh_tokens WHERE expira_en <= CURRENT_TIMESTAMP');
         const resultado = await client.query(
-            `DELETE FROM refresh_tokens
-             WHERE token_hash = $1 AND expira_en > CURRENT_TIMESTAMP
-             RETURNING usuario_id`,
+            `DELETE FROM refresh_tokens rt USING usuarios u
+             WHERE rt.token_hash = $1 AND rt.expira_en > CURRENT_TIMESTAMP
+               AND u.id = rt.usuario_id AND rt.session_version = u.session_version
+             RETURNING rt.usuario_id, rt.session_version`,
             [hashRefreshToken(refreshToken)]
         );
         if (resultado.rowCount === 0) {
@@ -154,7 +171,9 @@ router.post('/refresh', async (req, res) => {
             return res.status(401).json({ error: 'La sesión ya no es válida.' });
         }
 
-        await establecerTokens(res, usuarioResultado.rows[0], client);
+        await establecerTokens(res, {
+            ...usuarioResultado.rows[0], session_version: resultado.rows[0].session_version
+        }, client);
         await client.query('COMMIT');
         return res.json({ mensaje: 'Sesión renovada correctamente.' });
     } catch (error) {
@@ -179,7 +198,7 @@ router.post('/logout', async (req, res) => {
     }
 });
 
-router.post('/register', async (req, res) => {
+router.post('/register', limitarRegistro, async (req, res) => {
     const { errores, valores } = validarRegistro(req.body);
 
     if (Object.keys(errores).length > 0) {
