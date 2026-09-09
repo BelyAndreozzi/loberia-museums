@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import '../styles/Dashboard.scss';
@@ -9,6 +9,7 @@ import ModalDetalles from '../components/ModalDetalles';
 import ModalConfirmacion from '../components/ModalConfirmacion';
 import TarjetasEstadisticas from '../components/TarjetasEstadisticas';
 import { descargarInventarioCsv } from '../utils/exportarInventario';
+import { museoPorId } from '../museos';
 
 const estadisticasIniciales = {
     total: 0,
@@ -22,7 +23,7 @@ const nombresInventario: Record<number, string> = {
     2: 'Historia'
 };
 
-const Dashboard = () => {
+const Inventario = () => {
     const navigate = useNavigate();
     const { usuario, cargando: sesionCargando, logout, fetchConSesion } = useAuth();
     const [parametros] = useSearchParams();
@@ -284,7 +285,7 @@ const Dashboard = () => {
                                         Cerrar Sesión
                                     </Link>
                                 ) : (
-                                    <Link to="/login" className="dropdown-item">
+                                    <Link to={`/login/${museoPorId(museoId)?.slug}`} className="dropdown-item">
                                         Iniciar sesión
                                     </Link>
                                 )}
@@ -498,6 +499,17 @@ const Dashboard = () => {
             />
         </div>
     );
+};
+
+const Dashboard = () => {
+    const { usuario, cargando } = useAuth();
+    const [parametros] = useSearchParams();
+    const museo = museoPorId(Number(parametros.get('museo_id') ?? usuario?.museo_id));
+    if (cargando) return <div className="dashboard-loading">Cargando sesión...</div>;
+    if (!museo) return <Navigate to="/login" replace />;
+    if (!usuario || usuario.museo_id !== museo.id) return <Navigate to={`/login/${museo.slug}`} replace />;
+    if (!parametros.has('museo_id')) return <Navigate to={`/dashboard?museo_id=${museo.id}`} replace />;
+    return <Inventario key={museo.id} />;
 };
 
 export default Dashboard;
