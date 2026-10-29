@@ -3,20 +3,21 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../config';
 import '../styles/Auth.scss';
-import logoNaturales from '../assets/logos/logo-naturales.jpg';
-import logoHistoria from '../assets/logos/logo-historia.jpg';
+import { MUSEOS, museoPorId } from '../museos';
+import type { Museo } from '../museos';
 
-const Registro = () => {
+const Registro = ({ museo }: { museo?: Museo }) => {
     const [datos, setDatos] = useState({
         username: '',
         email: '',
-        museo_id: '1',
+        museo_id: museo ? String(museo.id) : '',
         password: '',
         confirmPassword: ''
     });
     const [mensaje, setMensaje] = useState('');
     const [errores, setErrores] = useState<Record<string, string>>({});
     const [cargando, setCargando] = useState(false);
+    const museoElegido = museoPorId(Number(datos.museo_id));
 
     const actualizarCampo = (campo: string, valor: string) => {
         setDatos({ ...datos, [campo]: valor });
@@ -26,6 +27,7 @@ const Registro = () => {
 
     const registrar = async (evento: FormEvent<HTMLFormElement>) => {
         evento.preventDefault();
+        if (cargando) return;
         setCargando(true);
         setErrores({});
         setMensaje('');
@@ -44,7 +46,7 @@ const Registro = () => {
             }
 
             setMensaje(resultado.mensaje);
-            setDatos({ username: '', email: '', museo_id: '1', password: '', confirmPassword: '' });
+            setDatos({ username: '', email: '', museo_id: datos.museo_id, password: '', confirmPassword: '' });
         } catch {
             setErrores({ general: 'No se pudo conectar con el servidor.' });
         } finally {
@@ -54,11 +56,13 @@ const Registro = () => {
 
     return (
         <main className="auth-page">
-            <section className="auth-panel">
+            <section className={`auth-panel${museoElegido ? ` auth-museum-${museoElegido.id}` : ''}`}>
                 <div className="auth-intro">
+                    {museoElegido && <img className="auth-museum-logo" src={museoElegido.logo} alt="" />}
                     <span className="auth-kicker">Museos Lobería</span>
                     <h1>Crear cuenta</h1>
-                    <p>Registrate para comenzar a gestionar el patrimonio de tu museo.</p>
+                    {museoElegido && <h2 className="auth-museum-name">{museoElegido.nombre}</h2>}
+                    <p>{museoElegido ? `Tu cuenta pertenecerá a ${museoElegido.nombre}.` : 'Elegí a qué museo pertenecés para crear tu cuenta.'}</p>
                 </div>
 
                 <form className="auth-form" onSubmit={registrar}>
@@ -73,24 +77,18 @@ const Registro = () => {
                         {errores.email && <small>{errores.email}</small>}
                     </label>
 
-                    <div className="museum-selector">
-                        <span className="museum-selector-label">Museo</span>
+                    {!museo && <fieldset className="museum-selector" disabled={cargando}>
+                        <legend className="museum-selector-label">Museo al que pertenecés</legend>
                         <div className="museum-options">
-                            <label className={`museum-option ${datos.museo_id === '1' ? 'selected' : ''}`}>
-                                <input type="radio" name="museo_id" value="1" checked={datos.museo_id === '1'} onChange={e => actualizarCampo('museo_id', e.target.value)} />
-                                <img src={logoNaturales} alt="Cs. Naturales" />
-                                <span className="museum-option-name">Ciencias Naturales</span>
-                                <span className="museum-option-check">{datos.museo_id === '1' ? '●' : '○'}</span>
-                            </label>
-                            <label className={`museum-option ${datos.museo_id === '2' ? 'selected' : ''}`}>
-                                <input type="radio" name="museo_id" value="2" checked={datos.museo_id === '2'} onChange={e => actualizarCampo('museo_id', e.target.value)} />
-                                <img src={logoHistoria} alt="Museo Histórico" />
-                                <span className="museum-option-name">Museo Histórico</span>
-                                <span className="museum-option-check">{datos.museo_id === '2' ? '●' : '○'}</span>
-                            </label>
+                            {MUSEOS.map(opcion => <label key={opcion.id} className={`museum-option ${datos.museo_id === String(opcion.id) ? 'selected' : ''}`}>
+                                <input type="radio" name="museo_id" value={opcion.id} required checked={datos.museo_id === String(opcion.id)} onChange={e => actualizarCampo('museo_id', e.target.value)} />
+                                <img src={opcion.logo} alt="" />
+                                <span className="museum-option-name">{opcion.nombre}</span>
+                                <span className="museum-option-check" aria-hidden="true">{datos.museo_id === String(opcion.id) ? '●' : '○'}</span>
+                            </label>)}
                         </div>
                         {errores.museo_id && <small>{errores.museo_id}</small>}
-                    </div>
+                    </fieldset>}
 
                     <label>
                         Contraseña
@@ -103,12 +101,13 @@ const Registro = () => {
                         {errores.confirmPassword && <small>{errores.confirmPassword}</small>}
                     </label>
 
-                    {errores.general && <p className="auth-error">{errores.general}</p>}
-                    {mensaje && <p className="auth-success">{mensaje}</p>}
-                    <button type="submit" disabled={cargando}>{cargando ? 'Registrando...' : 'Crear cuenta'}</button>
+                    {errores.general && <p className="auth-error" role="alert">{errores.general}</p>}
+                    {mensaje && <p className="auth-success" role="status">{mensaje}</p>}
+                    <button type="submit" disabled={cargando || Boolean(mensaje)}>{cargando ? 'Registrando...' : 'Crear cuenta'}</button>
                 </form>
 
-                <p className="auth-footer">¿Ya tenés una cuenta? <Link to="/">Volver al inicio</Link></p>
+                <p className="auth-footer">¿Ya tenés una cuenta? <Link to={museoElegido ? `/login/${museoElegido.slug}` : '/login'}>Iniciar sesión{museoElegido ? ` en ${museoElegido.nombre}` : ''}</Link></p>
+                <p className="auth-footer"><Link to="/registro">Elegir otro museo</Link></p>
             </section>
         </main>
     );

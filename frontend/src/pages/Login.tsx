@@ -4,16 +4,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { API_URL } from '../config';
 import '../styles/Auth.scss';
-import logoNaturales from '../assets/logos/logo-naturales.jpg';
-import logoHistoria from '../assets/logos/logo-historia.jpg';
+import { MUSEOS, museoPorId } from '../museos';
+import type { Museo } from '../museos';
 
-const Login = () => {
+const Login = ({ museo }: { museo?: Museo }) => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, usuario, logout, cargando: sesionCargando } = useAuth();
     const [datos, setDatos] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
-    const [sesionActiva, setSesionActiva] = useState(false);
+    const museoSesion = usuario ? museoPorId(usuario.museo_id) : undefined;
 
     const actualizarCampo = (campo: 'email' | 'password', valor: string) => {
         setDatos({ ...datos, [campo]: valor });
@@ -22,6 +22,7 @@ const Login = () => {
 
     const iniciarSesion = async (evento: FormEvent<HTMLFormElement>) => {
         evento.preventDefault();
+        if (!museo || cargando) return;
         setCargando(true);
         setError('');
 
@@ -30,14 +31,11 @@ const Login = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(datos)
+                body: JSON.stringify({ ...datos, museo_id: museo.id })
             });
             const resultado = await respuesta.json();
 
             if (!respuesta.ok) {
-                if (respuesta.status === 409 && resultado.error === 'Ya estás logueado.') {
-                    setSesionActiva(true);
-                }
                 setError(resultado.error || 'No se pudo iniciar sesión.');
                 return;
             }
@@ -45,7 +43,7 @@ const Login = () => {
             if (resultado.usuario) {
                 login(resultado.usuario);
             }
-            navigate('/dashboard');
+            navigate(`/dashboard?museo_id=${museo.id}`);
         } catch {
             setError('No se pudo conectar con el servidor.');
         } finally {
@@ -53,16 +51,45 @@ const Login = () => {
         }
     };
 
-    return (
+    if (!museo) return (
         <main className="auth-page">
             <section className="auth-panel">
                 <div className="auth-intro">
                     <span className="auth-kicker">Museos Lobería</span>
+                    <h1>Elegí tu museo</h1>
+                    <p>Iniciá sesión en el museo al que pertenece tu cuenta.</p>
+                </div>
+                <div className="museum-links">
+                    {MUSEOS.map(opcion => <Link key={opcion.id} to={`/login/${opcion.slug}`} className="museum-link">
+                        <img src={opcion.logo} alt="" /><span>{opcion.nombre}</span>
+                    </Link>)}
+                </div>
+                <p className="auth-footer"><Link to="/">Volver al inicio</Link></p>
+            </section>
+        </main>
+    );
+
+    return (
+        <main className="auth-page">
+            <section className={`auth-panel auth-museum-${museo.id}`}>
+                <div className="auth-intro">
+                    <img className="auth-museum-logo" src={museo.logo} alt="" />
+                    <span className="auth-kicker">Museos Lobería</span>
                     <h1>Iniciar sesión</h1>
-                    <p>Ingresá para gestionar el patrimonio de tu museo.</p>
+                    <h2 className="auth-museum-name">{museo.nombre}</h2>
+                    <p>Ingresá con tu cuenta de este museo.</p>
                 </div>
 
-                <form className="auth-form" onSubmit={iniciarSesion}>
+                {sesionCargando ? <p role="status">Cargando sesión...</p> : usuario ? <div className="auth-form">
+                    <p role="status">Tenés una sesión activa{museoSesion ? ` en ${museoSesion.nombre}` : ''}.</p>
+                    {usuario.museo_id === museo.id
+                        ? <Link className="auth-link-button" to={`/dashboard?museo_id=${museo.id}`}>Ir al inventario</Link>
+                        : <button type="button" disabled={cargando} onClick={async () => {
+                            setCargando(true);
+                            await logout();
+                            setCargando(false);
+                        }}>Cerrar sesión para ingresar a {museo.nombre}</button>}
+                </div> : <form className="auth-form" onSubmit={iniciarSesion}>
                     <label>
                         Email
                         <input
@@ -84,26 +111,16 @@ const Login = () => {
                         />
                     </label>
 
-                    {error && <p className="auth-error">{error}</p>}
+                    {error && <p className="auth-error" role="alert">{error}</p>}
                     <button type="submit" disabled={cargando}>
                         {cargando ? 'Ingresando...' : 'Ingresar'}
                     </button>
-                </form>
+                </form>}
 
-                {sesionActiva && (
-                    <div className="museum-links">
-                        <Link to="/dashboard?museo_id=1" className="museum-link">
-                            <img src={logoNaturales} alt="" />
-                            <span>Ciencias Naturales</span>
-                        </Link>
-                        <Link to="/dashboard?museo_id=2" className="museum-link">
-                            <img src={logoHistoria} alt="" />
-                            <span>Museo Histórico</span>
-                        </Link>
-                    </div>
-                )}
+                <p className="auth-footer"><Link to="/olvide-password">Olvidé mi contraseña</Link></p>
 
-                <p className="auth-footer">¿Todavía no tenés una cuenta? <Link to="/registro">Crear cuenta</Link></p>
+                <p className="auth-footer">¿Todavía no tenés una cuenta? <Link to={`/registro/${museo.slug}`}>Crear cuenta en {museo.nombre}</Link></p>
+                <p className="auth-footer"><Link to="/login">Elegir otro museo</Link></p>
             </section>
         </main>
     );

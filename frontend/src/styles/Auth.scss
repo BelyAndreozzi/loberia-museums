@@ -33,6 +33,26 @@
     margin-bottom: 28px; 
 }
 
+.auth-museum-logo {
+    display: block;
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 18px;
+}
+
+.auth-museum-name {
+    color: $color-primario;
+    font-size: 1.15rem;
+    margin: 0 0 12px;
+}
+
+.auth-museum-2 {
+    &::before { background: #9a632c; }
+    .auth-museum-name { color: #845326; }
+}
+
 .auth-kicker { 
     color: $color-primario; 
     font-size: 0.78rem; 
@@ -182,6 +202,10 @@
 .museum-selector {
     display: grid;
     gap: 10px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
 }
 
 .museum-selector-label {
@@ -207,7 +231,9 @@
     transition: all 0.2s ease;
     text-align: center;
 
-    input { display: none; }
+    position: relative;
+    input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; }
+    &:has(input:focus-visible) { outline: 3px solid $color-primario; outline-offset: 3px; }
 
     img {
         width: 56px;

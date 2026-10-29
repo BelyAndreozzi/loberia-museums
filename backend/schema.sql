@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS unaccent;
+-- Después del esquema base, ejecutar: npm run migrate --prefix backend
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,

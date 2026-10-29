@@ -13,7 +13,9 @@ router.get('/', async (req, res) => {
                     m.nombre AS museo_nombre
              FROM usuarios u
              LEFT JOIN museos m ON u.museo_id = m.id
-             ORDER BY u.fecha_registro DESC`
+             WHERE u.museo_id = $1
+             ORDER BY u.fecha_registro DESC`,
+            [req.user.museo_id]
         );
         res.json(resultado.rows);
     } catch (error) {
@@ -42,8 +44,8 @@ router.put('/:id/rol', async (req, res) => {
 
     try {
         const resultado = await pool.query(
-            `UPDATE usuarios SET rol = $1 WHERE id = $2 RETURNING id, username, email, rol, museo_id`,
-            [rol, userId]
+            `UPDATE usuarios SET rol = $1 WHERE id = $2 AND museo_id = $3 RETURNING id, username, email, rol, museo_id`,
+            [rol, userId, req.user.museo_id]
         );
 
         if (resultado.rowCount === 0) {
