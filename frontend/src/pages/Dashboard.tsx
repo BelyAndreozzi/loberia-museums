@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +32,8 @@ const Inventario = () => {
     const puedeModificar = estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin');
 
     const [piezas, setPiezas] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const ultimaPeticion = useRef(0);
     const [estadisticas, setEstadisticas] = useState(estadisticasIniciales);
     const [cargandoEstadisticas, setCargandoEstadisticas] = useState(true);
 
@@ -73,6 +75,9 @@ const Inventario = () => {
     }, [menuAbierto]);
 
     const cargarDatos = async () => {
+        // Solo la última petición actualiza la tabla: evita que una búsqueda vieja pise a la nueva.
+        const peticion = ++ultimaPeticion.current;
+        setCargando(true);
         try {
             const params = new URLSearchParams({
                 museo_id: museoId.toString(),
@@ -85,10 +90,12 @@ const Inventario = () => {
             const respuesta = await fetchConSesion(`/api/piezas?${params.toString()}`);
             if (respuesta.ok) {
                 const datos = await respuesta.json();
-                setPiezas(datos);
+                if (peticion === ultimaPeticion.current) setPiezas(datos);
             }
         } catch (error) {
             console.error('Error al cargar piezas:', error);
+        } finally {
+            if (peticion === ultimaPeticion.current) setCargando(false);
         }
     };
 
@@ -235,6 +242,13 @@ const Inventario = () => {
                                 </Link>
                             </li>
                         )}
+                        {estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin') && (
+                            <li>
+                                <Link to="/historial" onClick={() => setSidebarAbierta(false)}>
+                                    Historial de cambios
+                                </Link>
+                            </li>
+                        )}
                         {estaAutenticado && (
                             <li>
                                 <Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>
@@ -319,7 +333,7 @@ const Inventario = () => {
                                             nombresInventario[museoId],
                                             museoId
                                         )}
-                                        disabled={piezas.length === 0}
+                                        disabled={cargando || piezas.length === 0}
                                         title="Descargar el inventario filtrado en CSV"
                                     >
                                         <span aria-hidden="true">⇩</span>
@@ -410,6 +424,7 @@ const Inventario = () => {
                                                     <input
                                                         type="checkbox"
                                                         onChange={toggleSeleccionarTodo}
+                                                        disabled={cargando}
                                                         checked={piezas.length > 0 && idsSeleccionados.length === piezas.length}
                                                     />
                                                 </th>
@@ -423,7 +438,13 @@ const Inventario = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {piezas.length === 0 ? (
+                                        {cargando ? Array.from({ length: 4 }, (_, fila) => (
+                                            <tr className="table-skeleton-row" key={`skeleton-${fila}`} aria-hidden="true">
+                                                {puedeModificar && <td className="skeleton-celda-check"><span className="skeleton table-skeleton" /></td>}
+                                                {Array.from({ length: 5 }, (_, columna) => <td key={columna}><span className="skeleton table-skeleton" /></td>)}
+                                                <td className="skeleton-celda-acciones"><span className="skeleton table-skeleton" /></td>
+                                            </tr>
+                                        )) : piezas.length === 0 ? (
                                             <tr>
                                                 <td colSpan={puedeModificar ? 7 : 6} className="mensaje-vacio">
                                                     Completemos el patrimonio; ¡agregá una pieza!

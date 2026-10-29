@@ -56,13 +56,14 @@ const Registro = ({ museo }: { museo?: Museo }) => {
 
     return (
         <main className="auth-page">
-            <section className={`auth-panel${museoElegido ? ` auth-museum-${museoElegido.id}` : ''}`}>
+            <section className={`auth-panel auth-panel-registro${museoElegido ? ` auth-museum-${museoElegido.id}` : ''}`}>
                 <div className="auth-intro">
                     {museoElegido && <img className="auth-museum-logo" src={museoElegido.logo} alt="" />}
-                    <span className="auth-kicker">Museos Lobería</span>
-                    <h1>Crear cuenta</h1>
-                    {museoElegido && <h2 className="auth-museum-name">{museoElegido.nombre}</h2>}
-                    <p>{museoElegido ? `Tu cuenta pertenecerá a ${museoElegido.nombre}.` : 'Elegí a qué museo pertenecés para crear tu cuenta.'}</p>
+                    <div>
+                        <span className="auth-kicker">Museos Lobería</span>
+                        <h1>Crear cuenta</h1>
+                        <p>{museoElegido ? <>Tu cuenta pertenecerá a <strong className="auth-museum-name">{museoElegido.nombre}</strong>.</> : 'Elegí a qué museo pertenecés para crear tu cuenta.'}</p>
+                    </div>
                 </div>
 
                 <form className="auth-form" onSubmit={registrar}>
@@ -107,7 +108,7 @@ const Registro = ({ museo }: { museo?: Museo }) => {
                 </form>
 
                 <p className="auth-footer">¿Ya tenés una cuenta? <Link to={museoElegido ? `/login/${museoElegido.slug}` : '/login'}>Iniciar sesión{museoElegido ? ` en ${museoElegido.nombre}` : ''}</Link></p>
-                <p className="auth-footer"><Link to="/registro">Elegir otro museo</Link></p>
+                {museo && <p className="auth-footer"><Link to="/registro">Elegir otro museo</Link></p>}
             </section>
         </main>
     );

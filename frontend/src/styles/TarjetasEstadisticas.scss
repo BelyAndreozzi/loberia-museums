@@ -129,6 +129,17 @@
     color: $color-blanco-puro;
 }
 
+// Misma altura que el número (font-size × line-height 1): la tarjeta no cambia de tamaño al cargar.
+.skeleton-value {
+    display: block;
+    width: var(--skeleton-width, 3rem);
+    height: 1em;
+}
+
+.estadistica-total .skeleton {
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 25%, rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0.2) 65%);
+}
+
 .estado-punto {
     width: 10px;
     height: 10px;

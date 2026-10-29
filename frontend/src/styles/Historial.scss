@@ -1,0 +1,102 @@
+@import 'variables';
+
+.historial-tabla td {
+    vertical-align: top;
+}
+
+.historial-fecha {
+    white-space: nowrap;
+    color: $color-texto-parrafos;
+}
+
+.historial-accion {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: $radius-full;
+    font-size: 0.775rem;
+    font-weight: 600;
+
+    &.crear { background: $color-primario-light; color: $color-primario-hover; }
+    &.editar { background: #eff6ff; color: #1d4ed8; }
+    &.eliminar { background: #fef2f2; color: #b91c1c; }
+}
+
+.historial-pieza {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color-texto-titulos;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { color: $color-primario; text-decoration: underline; }
+}
+
+.historial-eliminada {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: $radius-full;
+    background: #f1f5f9;
+    color: $color-texto-parrafos;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.historial-cambios {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+
+    del { color: #b91c1c; }
+    ins { color: $color-primario-hover; text-decoration: none; font-weight: 600; }
+}
+
+.historial-campo {
+    color: $color-texto-parrafos;
+}
+
+.historial-sin-cambios {
+    color: $color-texto-muted;
+    font-style: italic;
+}
+
+.historial-datos {
+    summary {
+        color: $color-primario;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    dl {
+        display: grid;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+    dl div {
+        display: flex;
+        gap: 6px;
+    }
+
+    dt { color: $color-texto-parrafos; }
+    dt::after { content: ':'; }
+}
+
+.historial-error {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #fef2f2;
+    color: #dc2626;
+    border-left: 4px solid #ef4444;
+    border-radius: $radius-sm;
+    font-size: 0.875rem;
+}
+
+.historial-mas {
+    display: block;
+    margin: 16px auto 0;
+}
