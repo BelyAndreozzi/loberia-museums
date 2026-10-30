@@ -46,7 +46,13 @@ test('recuperación completa en PostgreSQL aislado', { skip: !process.env.PG_BIN
         correos.push({ email, token });
     };
     const verificaciones = [];
-    require('../services/emailService').enviarEmailVerificacion = async email => verificaciones.push(email);
+    let fallarVerificacion = false;
+    require('../services/emailService').enviarEmailVerificacion = async email => {
+        if (fallarVerificacion) throw new Error('Fallo SMTP simulado');
+        verificaciones.push(email);
+    };
+    const aprobaciones = [];
+    require('../services/emailService').enviarEmailAprobacionRegistro = async datos => aprobaciones.push(datos);
     const service = require('../services/passwordResetService');
     const tokenService = require('../services/tokenService');
     const express = require('express');
@@ -80,9 +86,9 @@ test('recuperación completa en PostgreSQL aislado', { skip: !process.env.PG_BIN
     for (let i = 0; i < 2; i++) await ejecutar(process.execPath, [path.join(__dirname, '../scripts/migrate.js')], { windowsHide: true, env: process.env });
     const password = 'NuevaSegura123';
     const anterior = await bcrypt.hash('Anterior123', 4);
-    await pool.query(`INSERT INTO usuarios (username, email, password_hash, museo_id, email_verificado)
-        VALUES ('uno', 'uno@example.com', $1, 1, TRUE), ('dos', 'dos@example.com', $1, 2, TRUE),
-               ('tres', 'tres@example.com', $1, 1, FALSE)`, [anterior]);
+    await pool.query(`INSERT INTO usuarios (username, email, password_hash, museo_id, email_verificado, estado_aprobacion)
+        VALUES ('uno', 'uno@example.com', $1, 1, TRUE, 'aprobado'), ('dos', 'dos@example.com', $1, 2, TRUE, 'aprobado'),
+               ('tres', 'tres@example.com', $1, 1, FALSE, 'aprobado')`, [anterior]);
     const datos = (token, email = 'uno@example.com') => ({ email, token, password, confirmPassword: password });
 
     await t.test('solicitud sin enumeración y token guardado como hash', async () => {
@@ -271,6 +277,74 @@ test('recuperación completa en PostgreSQL aislado', { skip: !process.env.PG_BIN
         assert.equal(historia.status, 200);
         assert.equal((await historia.json()).usuario.museo_id, 2);
     });
+    await t.test('registro pendiente: notifica al encargado y exige una aprobación de un solo uso antes del login', async () => {
+        await pool.query("UPDATE usuarios SET rol = 'encargado' WHERE id = 1");
+        await expirarLimite('register-ip', '127.0.0.1');
+        const solicitud = {
+            username: 'pendiente', email: 'pendiente@example.com', museo_id: 1,
+            password: 'Segura123', confirmPassword: 'Segura123'
+        };
+        const registro = await post('register', solicitud);
+        assert.equal(registro.status, 201);
+        assert.equal((await pool.query("SELECT estado_aprobacion FROM usuarios WHERE email = 'pendiente@example.com'")).rows[0].estado_aprobacion, 'pendiente');
+        assert.equal(aprobaciones.length, 1);
+        assert.equal(aprobaciones[0].destinatario, 'uno@example.com');
+        assert.match(aprobaciones[0].token, /^[a-f0-9]{64}$/);
+        await expirarLimite('login-ip', '127.0.0.1');
+        assert.equal((await post('login', { email: solicitud.email, password: solicitud.password })).status, 403);
+
+        const sesion = async (email, clave, museo_id) => {
+            await expirarLimite('login-email', email);
+            const respuesta = await post('login', { email, password: clave, museo_id });
+            assert.equal(respuesta.status, 200);
+            return respuesta.headers.getSetCookie().map(valor => valor.split(';')[0]).join('; ');
+        };
+        const decidir = (token, decision, Cookie) => post('registration-approval', { token, decision }, Cookie ? { Cookie } : {});
+        const estado = async email => (await pool.query('SELECT estado_aprobacion FROM usuarios WHERE email = $1', [email])).rows[0].estado_aprobacion;
+        const encargado = await sesion('uno@example.com', password, 1);
+        const otroMuseo = await sesion('dos@example.com', 'Anterior123', 2);
+
+        // El enlace solo no alcanza: sin sesión, con rol sin permiso o desde otro museo, no se consume.
+        assert.equal((await decidir(aprobaciones[0].token, 'aprobado')).status, 401);
+        assert.equal((await decidir(aprobaciones[0].token, 'aprobado', otroMuseo)).status, 403);
+        await pool.query("UPDATE usuarios SET rol = 'encargado' WHERE email = 'dos@example.com'");
+        try {
+            assert.equal((await decidir(aprobaciones[0].token, 'aprobado', otroMuseo)).status, 400);
+        } finally {
+            await pool.query("UPDATE usuarios SET rol = 'usuario' WHERE email = 'dos@example.com'");
+        }
+        assert.equal(await estado(solicitud.email), 'pendiente');
+
+        const aprobada = await decidir(aprobaciones[0].token, 'aprobado', encargado);
+        assert.equal(aprobada.status, 200);
+        assert.equal((await decidir(aprobaciones[0].token, 'rechazado', encargado)).status, 400);
+        assert.equal((await pool.query("SELECT estado_aprobacion FROM usuarios WHERE email = 'pendiente@example.com'")).rows[0].estado_aprobacion, 'aprobado');
+        await pool.query("UPDATE usuarios SET email_verificado = TRUE WHERE email = 'pendiente@example.com'");
+        assert.equal((await post('login', { email: solicitud.email, password: solicitud.password })).status, 200);
+
+        await expirarLimite('register-ip', '127.0.0.1');
+        const rechazo = { ...solicitud, username: 'rechazado', email: 'rechazado@example.com' };
+        assert.equal((await post('register', rechazo)).status, 201);
+        assert.equal(aprobaciones.length, 2);
+        assert.equal((await decidir(aprobaciones[1].token, 'rechazado', encargado)).status, 200);
+        await pool.query("UPDATE usuarios SET email_verificado = TRUE WHERE email = 'rechazado@example.com'");
+        await expirarLimite('login-ip', '127.0.0.1');
+        const loginRechazado = await post('login', { email: rechazo.email, password: rechazo.password });
+        assert.equal(loginRechazado.status, 403);
+        assert.deepEqual(await loginRechazado.json(), { error: 'Tu solicitud de registro fue rechazada.' });
+
+        await expirarLimite('register-ip', '127.0.0.1');
+        fallarVerificacion = true;
+        try {
+            const fallido = await post('register', { ...solicitud, username: 'sincorreo', email: 'sincorreo@example.com' });
+            assert.equal(fallido.status, 500);
+        } finally {
+            fallarVerificacion = false;
+        }
+        assert.equal((await pool.query("SELECT count(*)::int AS n FROM usuarios WHERE email = 'sincorreo@example.com'")).rows[0].n, 0);
+        assert.equal(aprobaciones.length, 2);
+        await pool.query("UPDATE usuarios SET rol = 'usuario' WHERE id = 1");
+    });
     await t.test('gestión de usuarios: limita listado al museo y deniega cambios de rol cross-tenant/sin permiso', async () => {
         await expirarLimite('login-ip', '127.0.0.1');
         await expirarLimite('login-email', 'uno@example.com');
@@ -297,6 +371,8 @@ test('recuperación completa en PostgreSQL aislado', { skip: !process.env.PG_BIN
     });
     await t.test('login/registro: deniega sin emitir sesiones/correos si falla almacenamiento del límite', async () => {
         const original = pool.query;
+        const verificacionesAntes = verificaciones.length;
+        const aprobacionesAntes = aprobaciones.length;
         pool.query = async () => { throw new Error('Fallo DB simulado'); };
         try {
             for (const ruta of ['login', 'register']) {
@@ -305,7 +381,8 @@ test('recuperación completa en PostgreSQL aislado', { skip: !process.env.PG_BIN
                 assert.equal(respuesta.headers.get('Set-Cookie'), null);
                 assert.deepEqual(await respuesta.json(), { error: 'No se pudo procesar la solicitud. Intentá nuevamente.' });
             }
-            assert.equal(verificaciones.length, 1);
+            assert.equal(verificaciones.length, verificacionesAntes);
+            assert.equal(aprobaciones.length, aprobacionesAntes);
         } finally {
             pool.query = original;
         }

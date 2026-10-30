@@ -4,11 +4,13 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const pool = require('./db');
 const estadisticasRouter = require('./routes/estadisticas');
+const auditoriaRouter = require('./routes/auditoria');
 const authRouter = require('./routes/auth');
 const passwordResetRouter = require('./routes/passwordReset');
 const usuariosRouter = require('./routes/usuarios');
 const autenticarAccessToken = require('./middleware/autenticacion');
 const { requiereRol } = require('./middleware/autorizacion');
+const { obtenerPiezas, calcularCambios, registrarAuditoria } = require('./services/auditoriaPiezas');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -76,6 +78,11 @@ app.post('/api/piezas', requiereRol('encargado', 'admin'), async (req, res) => {
             await client.query(queryHistoria, valoresHistoria);
         }
 
+        const [creada] = await obtenerPiezas(client, [nuevaPiezaId], museoId);
+        await registrarAuditoria(client, {
+            piezaId: nuevaPiezaId, museoId, usuarioId: req.user.id, accion: 'CREAR', detalles: { pieza: creada.datos }
+        });
+
         await client.query('COMMIT');
         res.status(201).json({ mensaje: '¡Pieza guardada con éxito!', pieza_id: nuevaPiezaId });
 
@@ -89,6 +96,7 @@ app.post('/api/piezas', requiereRol('encargado', 'admin'), async (req, res) => {
 });
 
 app.use('/api/piezas/estadisticas', estadisticasRouter);
+app.use('/api/piezas/auditoria', auditoriaRouter);
 
 // Ruta GET para obtener piezas con filtros dinámicos
 app.get('/api/piezas', async (req, res) => {
@@ -154,39 +162,40 @@ app.get('/api/piezas', async (req, res) => {
 
 // Ruta DELETE para eliminar una pieza por su ID
 app.delete('/api/piezas/:id', requiereRol('encargado', 'admin'), async (req, res) => {
-    const { id } = req.params;
+    const id = Number(req.params.id);
     const museoId = req.user.museo_id;
 
+    if (!Number.isInteger(id)) {
+        return res.status(404).json({ error: 'La pieza no existe' });
+    }
+
+    // Cliente dedicado: BEGIN/COMMIT sobre el pool podrían ir por conexiones distintas.
+    const client = await pool.connect();
     try {
-        await pool.query('BEGIN');
+        await client.query('BEGIN');
 
-        await pool.query(`
-            DELETE FROM detalles_historia
-            WHERE pieza_id = $1
-                AND EXISTS (SELECT 1 FROM piezas WHERE id = $1 AND museo_id = $2)
-        `, [id, museoId]);
-        await pool.query(`
-            DELETE FROM detalles_naturales
-            WHERE pieza_id = $1
-                AND EXISTS (SELECT 1 FROM piezas WHERE id = $1 AND museo_id = $2)
-        `, [id, museoId]);
-
-        const resultado = await pool.query(
-            'DELETE FROM piezas WHERE id = $1 AND museo_id = $2 RETURNING *',
-            [id, museoId]
-        );
-
-        if (resultado.rowCount === 0) {
-            await pool.query('ROLLBACK');
+        const [pieza] = await obtenerPiezas(client, [id], museoId);
+        if (!pieza) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'La pieza no existe' });
         }
 
-        await pool.query('COMMIT');
+        await client.query('DELETE FROM detalles_historia WHERE pieza_id = $1', [id]);
+        await client.query('DELETE FROM detalles_naturales WHERE pieza_id = $1', [id]);
+        await client.query('DELETE FROM piezas WHERE id = $1 AND museo_id = $2', [id, museoId]);
+
+        await registrarAuditoria(client, {
+            piezaId: id, museoId, usuarioId: req.user.id, accion: 'ELIMINAR', detalles: { pieza: pieza.datos }
+        });
+
+        await client.query('COMMIT');
         res.json({ mensaje: 'Pieza eliminada correctamente' });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error al eliminar la pieza:', error);
         res.status(500).json({ error: 'Fallo al eliminar en la base de datos' });
+    } finally {
+        client.release();
     }
 });
 
@@ -195,32 +204,36 @@ app.delete('/api/piezas', requiereRol('encargado', 'admin'), async (req, res) =>
     const { ids } = req.body;
     const museoId = req.user.museo_id;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    if (!ids || !Array.isArray(ids) || ids.length === 0 || !ids.every(Number.isInteger)) {
         return res.status(400).json({ error: 'No se proporcionaron IDs válidos para eliminar' });
     }
 
+    const client = await pool.connect();
     try {
-        await pool.query('BEGIN');
+        await client.query('BEGIN');
 
-        await pool.query(`
-            DELETE FROM detalles_historia
-            WHERE pieza_id = ANY($1)
-                AND EXISTS (SELECT 1 FROM piezas WHERE piezas.id = detalles_historia.pieza_id AND museo_id = $2)
-        `, [ids, museoId]);
-        await pool.query(`
-            DELETE FROM detalles_naturales
-            WHERE pieza_id = ANY($1)
-                AND EXISTS (SELECT 1 FROM piezas WHERE piezas.id = detalles_naturales.pieza_id AND museo_id = $2)
-        `, [ids, museoId]);
+        // Solo se eliminan (y auditan) las piezas que pertenecen al museo del usuario.
+        const piezas = await obtenerPiezas(client, ids, museoId);
+        const idsPropios = piezas.map(pieza => pieza.id);
 
-        await pool.query('DELETE FROM piezas WHERE id = ANY($1) AND museo_id = $2', [ids, museoId]);
+        await client.query('DELETE FROM detalles_historia WHERE pieza_id = ANY($1::int[])', [idsPropios]);
+        await client.query('DELETE FROM detalles_naturales WHERE pieza_id = ANY($1::int[])', [idsPropios]);
+        await client.query('DELETE FROM piezas WHERE id = ANY($1::int[]) AND museo_id = $2', [idsPropios, museoId]);
 
-        await pool.query('COMMIT');
+        for (const pieza of piezas) {
+            await registrarAuditoria(client, {
+                piezaId: pieza.id, museoId, usuarioId: req.user.id, accion: 'ELIMINAR', detalles: { pieza: pieza.datos }
+            });
+        }
+
+        await client.query('COMMIT');
         res.json({ mensaje: 'Piezas eliminadas correctamente' });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error al eliminar múltiples piezas:', error);
         res.status(500).json({ error: 'Fallo al eliminar masivamente en la base de datos' });
+    } finally {
+        client.release();
     }
 });
 
@@ -243,23 +256,29 @@ app.put('/api/piezas/:id', requiereRol('encargado', 'admin'), async (req, res) =
     } = req.body;
     const museoId = req.user.museo_id;
 
+    if (!Number.isInteger(Number(id))) {
+        return res.status(404).json({ error: 'La pieza no existe' });
+    }
+
+    const client = await pool.connect();
     try {
-        await pool.query('BEGIN');
+        await client.query('BEGIN');
 
-        const queryPieza = `
-            UPDATE piezas 
-            SET numero_inventario = $1, nombre_designacion = $2, estado_conservacion = $3, procedencia = $4
-            WHERE id = $5 AND museo_id = $6
-        `;
-        const resultadoPieza = await pool.query(queryPieza, [numero_inventario, nombre_designacion, estado_conservacion, procedencia, id, museoId]);
-
-        if (resultadoPieza.rowCount === 0) {
-            await pool.query('ROLLBACK');
+        const [antes] = await obtenerPiezas(client, [Number(id)], museoId);
+        if (!antes) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'La pieza no existe' });
         }
 
+        const queryPieza = `
+            UPDATE piezas
+            SET numero_inventario = $1, nombre_designacion = $2, estado_conservacion = $3, procedencia = $4
+            WHERE id = $5 AND museo_id = $6
+        `;
+        await client.query(queryPieza, [numero_inventario, nombre_designacion, estado_conservacion, procedencia, id, museoId]);
+
         if (museoId === 1) {
-            await pool.query(`
+            await client.query(`
                 UPDATE detalles_naturales 
                 SET categoria = $1, ubicacion_museo = $2 
                 WHERE pieza_id = $3 AND EXISTS (
@@ -267,25 +286,37 @@ app.put('/api/piezas/:id', requiereRol('encargado', 'admin'), async (req, res) =
                 )
             `, [categoria, ubicacion_museo, id, museoId]);
         } else if (museoId === 2) {
-            await pool.query(`
-                UPDATE detalles_historia 
-                SET forma_ingreso = $1, material_principal = $2, material_secundario = $3, largo_cm = $4, ancho_cm = $5 
+            await client.query(`
+                UPDATE detalles_historia
+                SET forma_ingreso = $1, material_principal = $2, material_secundario = $3, largo_cm = $4, ancho_cm = $5
                 WHERE pieza_id = $6 AND EXISTS (
                     SELECT 1 FROM piezas WHERE piezas.id = $6 AND piezas.museo_id = $7
                 )
             `, [forma_ingreso, material_principal, material_secundario, largo_cm, ancho_cm, id, museoId]);
         }
 
-        await pool.query('COMMIT');
+        const [despues] = await obtenerPiezas(client, [antes.id], museoId);
+        await registrarAuditoria(client, {
+            piezaId: antes.id, museoId, usuarioId: req.user.id, accion: 'EDITAR',
+            detalles: { cambios: calcularCambios(antes.datos, despues.datos) }
+        });
+
+        await client.query('COMMIT');
         res.json({ mensaje: 'Pieza actualizada correctamente' });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error al actualizar la pieza:', error);
         res.status(500).json({ error: 'Fallo al actualizar en la base de datos' });
+    } finally {
+        client.release();
     }
 });
 
-// Levantar servidor
-app.listen(port, () => {
-    console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+// Levantar servidor (no al importarlo desde los tests)
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Servidor corriendo en http://localhost:${port}`);
+    });
+}
+
+module.exports = app;

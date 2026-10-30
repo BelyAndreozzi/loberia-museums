@@ -2,6 +2,7 @@
 
 .auth-page {
     min-height: 100vh;
+    min-height: 100dvh;
     display: grid;
     place-items: center;
     padding: 32px 18px;
@@ -199,6 +200,27 @@
     p { margin: 14px 0 26px; }
 }
 
+.approval-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 24px 0;
+
+    button {
+        padding: 12px 18px;
+        border: 0;
+        border-radius: $radius-md;
+        background: $color-primario;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .approval-reject { background: #b3261e; }
+    button:disabled { opacity: .65; cursor: wait; }
+}
+
 .museum-selector {
     display: grid;
     gap: 10px;
@@ -216,28 +238,29 @@
 
 .museum-options {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
 }
 
 .museum-option {
     display: grid;
-    gap: 8px;
-    justify-items: center;
-    padding: 16px 10px;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
     border: 2px solid $color-border;
     border-radius: $radius-md;
     cursor: pointer;
     transition: all 0.2s ease;
-    text-align: center;
+    text-align: left;
 
     position: relative;
     input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; }
     &:has(input:focus-visible) { outline: 3px solid $color-primario; outline-offset: 3px; }
 
     img {
-        width: 56px;
-        height: 56px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         object-fit: cover;
     }
@@ -266,6 +289,58 @@
     }
 }
 
+// Registro: más ancho y en dos columnas para que entre en la pantalla sin scroll.
+.auth-panel-registro {
+    width: min(100%, 600px);
+    padding: 32px 36px;
+
+    .auth-intro {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .auth-museum-logo {
+        width: 60px;
+        height: 60px;
+        flex: 0 0 60px;
+        margin: 0;
+    }
+
+    h1 {
+        margin: 4px 0;
+        font-size: 1.6rem;
+    }
+
+    .auth-museum-name {
+        margin: 0;
+        font-size: inherit;
+    }
+
+    .auth-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 16px;
+        align-items: start;
+
+        > .museum-selector,
+        > .auth-error,
+        > .auth-success,
+        > button { grid-column: 1 / -1; }
+    }
+
+    .auth-footer { margin-top: 16px; }
+    .auth-footer + .auth-footer { margin-top: 6px; }
+}
+
+@media (max-width: 600px) {
+    .auth-panel-registro .auth-form { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 520px) {
     .auth-panel { padding: 30px 22px; }
+}
+
+@media (max-width: 420px) {
+    .museum-options { grid-template-columns: 1fr; }
 }

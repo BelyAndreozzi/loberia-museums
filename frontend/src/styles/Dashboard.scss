@@ -399,6 +399,24 @@
                         background-color: $color-fondo-claro;
                     }
                 }
+
+                .table-skeleton-row {
+                    pointer-events: none;
+
+                    &:hover { background-color: $color-blanco-puro; }
+
+                    .table-skeleton {
+                        display: block;
+                        width: 75%;
+                        height: 14px;
+                    }
+
+                    td:nth-child(odd) .table-skeleton { width: 90%; }
+                    td.skeleton-celda-check .table-skeleton { width: 16px; height: 16px; margin: 0 auto; }
+
+                    // Imita el botón "Ver Detalles" para que la fila tenga la altura de una fila real.
+                    td.skeleton-celda-acciones .table-skeleton { width: 96px; height: 31px; margin: 0 auto; }
+                }
             }
 
 

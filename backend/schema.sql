@@ -8,13 +8,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
     password_hash VARCHAR(255) NOT NULL,
     rol VARCHAR(20) NOT NULL DEFAULT 'usuario',
     museo_id INTEGER,
+    estado_aprobacion VARCHAR(16) NOT NULL DEFAULT 'pendiente',
     email_verificado BOOLEAN NOT NULL DEFAULT FALSE,
     token_verificacion_hash VARCHAR(64),
     token_verificacion_expira TIMESTAMP,
     fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT usuarios_username_formato CHECK (username ~ '^[A-Za-z][A-Za-z0-9_.-]{2,29}$'),
     CONSTRAINT usuarios_email_no_vacio CHECK (length(trim(email)) > 3),
-    CONSTRAINT usuarios_rol_valido CHECK (rol IN ('encargado', 'admin', 'usuario'))
+    CONSTRAINT usuarios_rol_valido CHECK (rol IN ('encargado', 'admin', 'usuario')),
+    CONSTRAINT usuarios_estado_aprobacion_valido CHECK (estado_aprobacion IN ('pendiente', 'aprobado', 'rechazado'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS usuarios_username_unico
@@ -34,10 +36,22 @@ CREATE TABLE IF NOT EXISTS museos (
 
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'usuario';
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS museo_id INTEGER;
+-- Las cuentas existentes quedan aprobadas; solo las nuevas arrancan pendientes.
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS estado_aprobacion VARCHAR(16) NOT NULL DEFAULT 'aprobado';
+ALTER TABLE usuarios ALTER COLUMN estado_aprobacion SET DEFAULT 'pendiente';
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_valido;
 ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_valido CHECK (rol IN ('encargado', 'admin', 'usuario'));
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_museo_id_fkey;
 ALTER TABLE usuarios ADD CONSTRAINT usuarios_museo_id_fkey FOREIGN KEY (museo_id) REFERENCES museos(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS registro_aprobaciones (
+    usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    expira_en TIMESTAMPTZ NOT NULL,
+    decision VARCHAR(16) CHECK (decision IN ('aprobado', 'rechazado')),
+    decidido_en TIMESTAMPTZ,
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id SERIAL PRIMARY KEY,

@@ -81,6 +81,13 @@ const DashboardLayout = ({ titulo, museoId, children }: Props) => {
                                 </Link>
                             </li>
                         )}
+                        {estaAutenticado && (usuario?.rol === 'encargado' || usuario?.rol === 'admin') && (
+                            <li className={titulo === 'Historial de cambios' ? 'active' : ''}>
+                                <Link to="/historial" onClick={() => setSidebarAbierta(false)}>
+                                    Historial de cambios
+                                </Link>
+                            </li>
+                        )}
                         {estaAutenticado && (
                             <li>
                                 <Link to="/" onClick={evento => { setSidebarAbierta(false); cerrarSesion(evento); }}>

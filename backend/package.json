@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "migrate": "node scripts/migrate.js",
+    "crear-cuentas-base": "node scripts/crearCuentasBase.js",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [],
@@ -19,7 +20,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "^10.3.1",
     "pg": "^8.23.0"
   },
   "devDependencies": {

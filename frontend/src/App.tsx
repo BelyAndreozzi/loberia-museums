@@ -8,6 +8,8 @@ import RecuperarPassword from './pages/RecuperarPassword';
 import RestablecerPassword from './pages/RestablecerPassword';
 import VerificarEmail from './pages/VerificarEmail';
 import Admin from './pages/Admin';
+import AprobarRegistro from './pages/AprobarRegistro';
+import Historial from './pages/Historial';
 import { MUSEOS } from './museos';
 import './styles/global.scss';
 
@@ -25,7 +27,9 @@ function App() {
           <Route path="/olvide-password" element={<RecuperarPassword />} />
           <Route path="/restablecer-password" element={<RestablecerPassword />} />
           <Route path="/verificar-email" element={<VerificarEmail />} />
+          <Route path="/aprobar-registro" element={<AprobarRegistro />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/historial" element={<Historial />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

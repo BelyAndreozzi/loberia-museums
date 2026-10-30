@@ -1,4 +1,5 @@
 import '../styles/TarjetasEstadisticas.scss';
+import type { CSSProperties } from 'react';
 
 type Estadisticas = {
     total: number;
@@ -20,16 +21,18 @@ const estados = [
 ];
 
 const TarjetasEstadisticas = ({ estadisticas, cargando }: TarjetasEstadisticasProps) => {
-    const mostrarValor = (valor: number) => cargando ? '--' : valor;
+    const valor = (numero: number, ancho = '3.1rem') => cargando
+        ? <span className="skeleton skeleton-value" style={{ '--skeleton-width': ancho } as CSSProperties} aria-hidden="true" />
+        : numero;
 
     return (
-        <section className="estadisticas-inventario" aria-label="Resumen del inventario">
+        <section className="estadisticas-inventario" aria-label="Resumen del inventario" aria-busy={cargando}>
             <div className="estadisticas-destacadas">
                 <article className="estadistica-card estadistica-total">
                     <div className="estadistica-icono" aria-hidden="true">#</div>
                     <div>
                         <span className="estadistica-etiqueta">Patrimonio total</span>
-                        <strong className="estadistica-valor">{mostrarValor(estadisticas.total)}</strong>
+                        <strong className="estadistica-valor">{valor(estadisticas.total)}</strong>
                         <span className="estadistica-ayuda">Piezas inventariadas</span>
                     </div>
                 </article>
@@ -38,7 +41,7 @@ const TarjetasEstadisticas = ({ estadisticas, cargando }: TarjetasEstadisticasPr
                     <div className="estadistica-icono" aria-hidden="true">+</div>
                     <div>
                         <span className="estadistica-etiqueta">Ingresos recientes</span>
-                        <strong className="estadistica-valor">{mostrarValor(estadisticas.ingresadasRecientemente)}</strong>
+                        <strong className="estadistica-valor">{valor(estadisticas.ingresadasRecientemente)}</strong>
                         <span className="estadistica-ayuda">Últimos {estadisticas.periodoRecientesDias} días</span>
                     </div>
                 </article>
@@ -51,7 +54,7 @@ const TarjetasEstadisticas = ({ estadisticas, cargando }: TarjetasEstadisticasPr
                         <div>
                             <span className="estadistica-etiqueta">Estado {estado.etiqueta}</span>
                             <strong className="estadistica-valor">
-                                {mostrarValor(estadisticas.porEstado[estado.clave] || 0)}
+                                {valor(estadisticas.porEstado[estado.clave] || 0, '2.4rem')}
                             </strong>
                         </div>
                     </article>
