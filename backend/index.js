@@ -100,13 +100,19 @@ app.use('/api/piezas/auditoria', auditoriaRouter);
 
 // Ruta GET para obtener piezas con filtros dinámicos
 app.get('/api/piezas', async (req, res) => {
-    // 1. Recibimos los posibles filtros desde el frontend
     const {
-        busqueda, // Para palabra clave (nombre, inventario, procedencia)
+        busqueda,
         estado_conservacion,
-        categoria 
+        categoria,
+        page = '1',
+        limit = '10'
     } = req.query;
     const museoId = req.user.museo_id;
+
+    // Sanitizar page y limit con valores seguros
+    const paginaActual = Math.max(1, Number.parseInt(page, 10) || 1);
+    const tamanoPagina = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
+    const offset = (paginaActual - 1) * tamanoPagina;
 
     try {
         let query = `
@@ -115,7 +121,8 @@ app.get('/api/piezas', async (req, res) => {
                     dn.estanteria, dn.estante,
                     dh.material_principal, dh.material_secundario,
                     dh.material_terciario, dh.largo_cm, dh.ancho_cm,
-                    dh.espesor_cm, dh.autor, dh.forma_ingreso
+                    dh.espesor_cm, dh.autor, dh.forma_ingreso,
+                    COUNT(*) OVER()::int AS total_count
             FROM piezas p
             LEFT JOIN museos m ON p.museo_id = m.id
             LEFT JOIN detalles_naturales dn ON p.id = dn.pieza_id
@@ -126,14 +133,13 @@ app.get('/api/piezas', async (req, res) => {
         const params = [museoId];
         let paramCount = 2;
 
-        // Búsqueda general (Palabras clave)
         if (busqueda) {
             query += ` AND (
                 unaccent(p.nombre_designacion) ILIKE unaccent($${paramCount}) OR 
                 unaccent(p.numero_inventario) ILIKE unaccent($${paramCount}) OR 
                 unaccent(p.procedencia) ILIKE unaccent($${paramCount})
             )`;
-            params.push(`%${busqueda}%`); 
+            params.push(`%${busqueda}%`);
             paramCount++;
         }
 
@@ -149,10 +155,22 @@ app.get('/api/piezas', async (req, res) => {
             paramCount++;
         }
 
-        query += ` ORDER BY p.fecha_registro DESC`;
+        query += ` ORDER BY p.fecha_registro DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+        params.push(tamanoPagina, offset);
 
         const result = await pool.query(query, params);
-        res.json(result.rows);
+        const total = result.rows.length > 0 ? result.rows[0].total_count : 0;
+        const piezas = result.rows.map(({ total_count, ...pieza }) => pieza);
+
+        res.json({
+            piezas,
+            paginacion: {
+                page: paginaActual,
+                limit: tamanoPagina,
+                total,
+                totalPages: Math.ceil(total / tamanoPagina)
+            }
+        });
 
     } catch (error) {
         console.error('Error al obtener las piezas:', error);
