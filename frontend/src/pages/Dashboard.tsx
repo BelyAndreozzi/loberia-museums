@@ -23,6 +23,7 @@ const nombresInventario: Record<number, string> = {
     2: 'Historia'
 };
 
+
 const Inventario = () => {
     const navigate = useNavigate();
     const { usuario, cargando: sesionCargando, logout, fetchConSesion } = useAuth();
@@ -51,9 +52,20 @@ const Inventario = () => {
         estado_conservacion: '',
         categoria: ''
     });
+    
+    useEffect(() => {
+    cargarEstadisticas();
+}, [museoId]);
 
     const [menuAbierto, setMenuAbierto] = useState(false);
     const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
+    const [pagina, setPagina] = useState(1); 
+    const [totalPaginas, setTotalPaginas] = useState(1);
+    const limitePorPagina = 10;
+    useEffect(() => {
+        setPagina(1);
+    }, [filtros.busqueda, filtros.estado_conservacion, filtros.categoria, museoId]);
 
     const cerrarSesion = async (evento: ReactMouseEvent<HTMLAnchorElement>) => {
         evento.preventDefault();
@@ -74,13 +86,14 @@ const Inventario = () => {
         };
     }, [menuAbierto]);
 
-    const cargarDatos = async () => {
-        // Solo la última petición actualiza la tabla: evita que una búsqueda vieja pise a la nueva.
+    const cargarDatos = async (paginaObjetivo = pagina) => {
         const peticion = ++ultimaPeticion.current;
         setCargando(true);
         try {
             const params = new URLSearchParams({
                 museo_id: museoId.toString(),
+                page: paginaObjetivo.toString(),
+                limit: limitePorPagina.toString(),
             });
 
             if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
@@ -90,7 +103,10 @@ const Inventario = () => {
             const respuesta = await fetchConSesion(`/api/piezas?${params.toString()}`);
             if (respuesta.ok) {
                 const datos = await respuesta.json();
-                if (peticion === ultimaPeticion.current) setPiezas(datos);
+                if (peticion === ultimaPeticion.current) {
+                    setPiezas(datos.piezas);
+                    setTotalPaginas(Math.max(1, datos.paginacion?.totalPages ?? 1));
+                }
             }
         } catch (error) {
             console.error('Error al cargar piezas:', error);
@@ -193,12 +209,18 @@ const Inventario = () => {
     };
 
     useEffect(() => {
-        cargarDatos();
+        setIdsSeleccionados([]);
+        if (pagina !== 1) {
+            setPagina(1);
+        } else {
+            cargarDatos(1);
+        }
     }, [filtros, museoId]);
 
     useEffect(() => {
-        cargarEstadisticas();
-    }, [museoId]);
+        setIdsSeleccionados([]);
+        cargarDatos(pagina);
+    }, [pagina]);
 
     if (sesionCargando) {
         return <div className="dashboard-loading">Cargando sesión...</div>;
@@ -494,6 +516,69 @@ const Inventario = () => {
                                     </tbody>
                                 </table>
                             </div>
+                                {!cargando && totalPaginas > 1 && (() => {
+                                const puedeAnterior = pagina > 1;
+                                const puedeSiguiente = pagina < totalPaginas;
+
+                                return (
+                                    <div
+                                        className="paginacion-container"
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            marginTop: '18px',
+                                            padding: '12px 16px',
+                                            backgroundColor: '#f9fafb',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e5e7eb',
+                                            gap: '12px',
+                                            flexWrap: 'wrap'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '0.88rem', color: '#4b5563', fontWeight: 500 }}>
+                                            Página <strong>{pagina}</strong> de <strong>{totalPaginas}</strong>
+                                        </span>
+
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPagina((prev) => Math.max(1, prev - 1))}
+                                                disabled={!puedeAnterior}
+                                                style={{
+                                                    backgroundColor: puedeAnterior ? '#15803d' : '#e5e7eb',
+                                                    color: puedeAnterior ? '#ffffff' : '#9ca3af',
+                                                    border: puedeAnterior ? '1px solid #15803d' : '1px solid #d1d5db',
+                                                    borderRadius: '6px',
+                                                    padding: '7px 14px',
+                                                    fontSize: '0.88rem',
+                                                    fontWeight: 500,
+                                                    cursor: puedeAnterior ? 'pointer' : 'not-allowed'
+                                                }}
+                                            >
+                                                Anterior
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPagina((prev) => Math.min(totalPaginas, prev + 1))}
+                                                disabled={!puedeSiguiente}
+                                                style={{
+                                                    backgroundColor: puedeSiguiente ? '#15803d' : '#e5e7eb',
+                                                    color: puedeSiguiente ? '#ffffff' : '#9ca3af',
+                                                    border: puedeSiguiente ? '1px solid #15803d' : '1px solid #d1d5db',
+                                                    borderRadius: '6px',
+                                                    padding: '7px 14px',
+                                                    fontSize: '0.88rem',
+                                                    fontWeight: 500,
+                                                    cursor: puedeSiguiente ? 'pointer' : 'not-allowed'
+                                                }}
+                                            >
+                                                Siguiente
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </section>
